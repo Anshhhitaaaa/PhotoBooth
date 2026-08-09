@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Pink / rose ramp (primary) */
+  --pink-50: #fff1f3;
+  --pink-100: #ffe0e6;
+  --pink-200: #ffc7d4;
+  --pink-300: #ffa3bc;
+  --pink-400: #ff7aa1;
+  --pink-500: #f4517e;
+  --pink-600: #e11d63;
+  --pink-700: #be1248;
+  --pink-800: #9f1240;
+  --pink-900: #831843;
+
+  /* Red ramp (secondary) */
+  --red-300: #fca5a5;
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+
+  /* Accent (warm gold) */
+  --gold-200: #fde68a;
+  --gold-300: #fcd34d;
+  --gold-400: #fbbf24;
+  --gold-500: #f59e0b;
+
+  /* Cream / neutral */
+  --cream-50: #fffdf9;
+  --cream-100: #fdf6ee;
+  --cream-200: #f7e9dc;
+  --cream-300: #ecd6c4;
+  --stone-400: #a8a29e;
+  --stone-500: #78716c;
+  --stone-600: #57534e;
+  --stone-700: #44403c;
+
+  /* status */
+  --green-400: #34d399;
+  --green-600: #059669;
+  --amber-400: #fbbf24;
+  --rose-err: #e11d63;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Quicksand', system-ui, sans-serif;
+  color: var(--stone-700);
+  background: var(--cream-100);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-script {
+  font-family: 'Caveat', cursive;
+}
+.font-display {
+  font-family: 'Pacifico', cursive;
+}
+.font-sans {
+  font-family: 'Quicksand', sans-serif;
+}
+
+/* Soft romantic page background */
+.bg-romance {
+  background-color: var(--cream-100);
+  background-image:
+    radial-gradient(at 12% 18%, rgba(255, 167, 188, 0.35) 0px, transparent 55%),
+    radial-gradient(at 88% 12%, rgba(252, 211, 77, 0.22) 0px, transparent 50%),
+    radial-gradient(at 78% 88%, rgba(255, 122, 161, 0.28) 0px, transparent 55%),
+    radial-gradient(at 20% 82%, rgba(255, 199, 212, 0.30) 0px, transparent 50%);
+}
+
+/* Paper texture for album pages */
+.paper {
+  background-color: var(--cream-50);
+  background-image:
+    radial-gradient(rgba(190, 18, 72, 0.04) 1px, transparent 1px),
+    radial-gradient(rgba(120, 113, 108, 0.03) 1px, transparent 1px);
+  background-size: 22px 22px, 16px 16px;
+  background-position: 0 0, 11px 8px;
+}
+
+.paper-rose {
+  background-color: var(--pink-50);
+  background-image:
+    radial-gradient(rgba(225, 29, 99, 0.06) 1px, transparent 1px),
+    radial-gradient(rgba(245, 81, 126, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px, 16px 16px;
+  background-position: 0 0, 11px 8px;
+}
+
+/* Washi tape */
+.washi {
+  position: absolute;
+  height: 26px;
+  width: 110px;
+  opacity: 0.82;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.25) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+/* Floating hearts */
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-110vh) scale(1) rotate(var(--rot, 20deg));
+    opacity: 0;
+  }
+}
+.heart-float {
+  position: fixed;
+  bottom: -40px;
+  pointer-events: none;
+  animation: floatUp linear forwards;
+  z-index: 60;
+  user-select: none;
+}
+
+/* Sparkle burst on click */
+@keyframes sparklePop {
+  0% {
+    transform: scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6) rotate(90deg);
+    opacity: 0;
+  }
+}
+.sparkle-burst {
+  position: fixed;
+  pointer-events: none;
+  z-index: 70;
+  animation: sparklePop 0.6s ease-out forwards;
+  user-select: none;
+}
+
+/* Soft entrance */
+@keyframes softIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.soft-in {
+  animation: softIn 0.45s ease-out both;
+}
+
+/* Gentle pulse for record dot */
+@keyframes pulseDot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.6;
+  }
+}
+.pulse-dot {
+  animation: pulseDot 1s ease-in-out infinite;
+}
+
+/* Countdown pop */
+@keyframes countPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+}
+.count-pop {
+  animation: countPop 0.9s ease-out both;
+}
+
+/* Page flip for album */
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-18deg) translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0) translateX(0);
+  }
+}
+.page-in {
+  animation: pageIn 0.5s ease-out both;
+  transform-origin: left center;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--pink-200);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pink-300);
+}
+
+/* Range sliders */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--pink-100);
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--pink-500);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(225, 29, 99, 0.4);
+  border: 2px solid #fff;
+}
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pink-500);
+  cursor: pointer;
+  border: 2px solid #fff;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
