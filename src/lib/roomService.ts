@@ -321,7 +321,7 @@ export function subscribeRoomPages(
   const poll = async () => {
     try {
       // Check for updated room metadata (including active_session changes)
-      const roomRows = await query<any>(`SELECT * FROM rooms WHERE id = $1 LIMIT 1`, [roomId]);
+      const roomRows = await query<any>(`SELECT id, code, mode, partner1_name, partner2_name, names, members, active_session, created_at FROM rooms WHERE id = $1 LIMIT 1`, [roomId]);
       if (roomRows && roomRows.length > 0) {
         onChange({ eventType: 'room_update', newPage: parseRoom(roomRows[0]) as any });
       }
@@ -340,7 +340,7 @@ export function subscribeRoomPages(
   };
 
   poll();
-  const intervalId = setInterval(poll, 1500);
+  const intervalId = setInterval(poll, 2000);
 
   return () => {
     clearInterval(intervalId);

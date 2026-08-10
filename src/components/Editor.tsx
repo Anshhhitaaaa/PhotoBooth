@@ -43,7 +43,7 @@ export function Editor({ initial, initialLayout, onSave, onBack, names }: Props)
     return base;
   });
   const [stage, setStage] = useState<Stage>(initial ? 'edit' : 'capture');
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(initial ? true : false);
   const [title, setTitle] = useState('');
   const [section, setSection] = useState('');
   const [saving, setSaving] = useState(false);
