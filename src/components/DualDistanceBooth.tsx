@@ -11,13 +11,14 @@ import {
   Globe,
   User,
 } from 'lucide-react';
-import type { FilterId, Adjustments, Composition } from '@/types';
+import type { FilterId, Adjustments, Composition, LayoutId } from '@/types';
 import { filterById } from '@/lib/filters';
 import { Button } from '@/components/ui/Button';
 import { clsx } from '@/lib/utils';
 import {
   saveRoomSnap,
   loadLatestPartnerSnap,
+  uploadLiveCameraFrame,
   addRoomPage,
   updateRoomSessionState,
   endRoomSession,
@@ -28,6 +29,7 @@ import { renderToDataURL } from '@/lib/render';
 interface Props {
   room: Room;
   identity: 'p1' | 'p2' | 'p3' | 'p4';
+  layout?: LayoutId;
   slots?: number;
   filter: FilterId;
   adjustments: Adjustments;
@@ -35,11 +37,12 @@ interface Props {
   onCancel: () => void;
 }
 
-type Phase = 'idle' | 'counting' | 'review';
+type Phase = 'camera' | 'counting' | 'review';
 
 export function DualDistanceBooth({
   room,
   identity,
+  layout = 'strip',
   slots = 4,
   filter,
   adjustments,
@@ -49,19 +52,21 @@ export function DualDistanceBooth({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [phase, setPhase] = useState<Phase>('camera');
   const [count, setCount] = useState<number | null>(null);
   const [error, setError] = useState<string>('');
   const [facing, setFacing] = useState<'user' | 'environment'>('user');
   const [flash, setFlash] = useState(false);
-  const [sessionId] = useState(() => room.active_session?.sessionId || crypto.randomUUID());
+
+  const activeSession = room.active_session;
+  const sessionId = activeSession?.sessionId || 'default-session';
 
   // Split-screen photo states
   const [myPhotos, setMyPhotos] = useState<string[]>([]);
   const [partnerLatestSnap, setPartnerLatestSnap] = useState<string | null>(null);
   const [partnerPhotos, setPartnerPhotos] = useState<string[]>([]);
   const [mergedPhotos, setMergedPhotos] = useState<string[]>([]);
-  const [statusMessage, setStatusMessage] = useState('Split-Screen Distance Camera Connected');
+  const [statusMessage, setStatusMessage] = useState('Split-Screen Live Distance Camera Connected');
 
   const myName =
     identity === 'p1'
@@ -73,7 +78,7 @@ export function DualDistanceBooth({
       ? room.partner2_name || 'Partner 2'
       : room.partner1_name;
 
-  // Initialize Camera
+  // Initialize Local Webcam
   const startCamera = useCallback(async () => {
     try {
       if (streamRef.current) {
@@ -90,9 +95,7 @@ export function DualDistanceBooth({
       }
       setError('');
     } catch (e) {
-      setError(
-        'Camera access required for distance split screen. Please allow permission.',
-      );
+      setError('Camera access required for distance split screen. Please allow permission.');
     }
   }, [facing]);
 
@@ -105,7 +108,7 @@ export function DualDistanceBooth({
     };
   }, [startCamera]);
 
-  // Capture frame from local camera
+  // Capture current frame from local camera
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
@@ -119,32 +122,55 @@ export function DualDistanceBooth({
     }
     ctx.filter = filterById(filter).css(adjustments);
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL('image/jpeg', 0.88);
+    return canvas.toDataURL('image/jpeg', 0.85);
   }, [filter, adjustments, facing]);
 
-  // Poll for partner's latest frame on split screen
+  // Live video frame streaming: upload local webcam frame every 900ms
+  useEffect(() => {
+    if (phase !== 'camera') return;
+
+    const interval = setInterval(async () => {
+      const frame = captureFrame();
+      if (frame) {
+        uploadLiveCameraFrame(room.id, sessionId, myName, identity, frame);
+      }
+    }, 900);
+
+    return () => clearInterval(interval);
+  }, [phase, captureFrame, room.id, sessionId, myName, identity]);
+
+  // Fetch partner's live video frame every 900ms to show on right split screen
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const latest = await loadLatestPartnerSnap(room.id, sessionId, identity);
         if (latest?.photo_data) {
           setPartnerLatestSnap(latest.photo_data);
-          setPartnerPhotos((prev) => {
-            if (prev[latest.slot_index] === latest.photo_data) return prev;
-            const updated = [...prev];
-            updated[latest.slot_index] = latest.photo_data;
-            return updated;
-          });
+          if (latest.slot_index >= 0) {
+            setPartnerPhotos((prev) => {
+              const updated = [...prev];
+              updated[latest.slot_index] = latest.photo_data;
+              return updated;
+            });
+          }
         }
       } catch (e) {
-        // silent
+        // silent catch
       }
-    }, 1200);
+    }, 900);
 
     return () => clearInterval(interval);
   }, [room.id, sessionId, identity]);
 
-  // Synchronized photobooth burst
+  // Listen for remote countdown trigger in room session
+  useEffect(() => {
+    if (activeSession?.step === 'counting' && phase === 'camera') {
+      setStatusMessage(`${partnerName} triggered synchronized countdown!`);
+      runSynchronizedBurst();
+    }
+  }, [activeSession?.step, phase, partnerName]);
+
+  // Execute 3-2-1 synchronized burst capture
   const runSynchronizedBurst = useCallback(async () => {
     setPhase('counting');
     const localTaken: string[] = [];
@@ -165,37 +191,41 @@ export function DualDistanceBooth({
         localTaken.push(shot);
         setMyPhotos([...localTaken]);
 
-        // Upload live shot to Neon DB so partner's split screen updates instantly!
+        // Upload captured shot to DB
         try {
           await saveRoomSnap(room.id, sessionId, myName, identity, i, shot);
         } catch (e) {
-          console.error('Failed to sync split-screen snap:', e);
+          console.error('Failed to sync split shot:', e);
         }
       }
       await wait(600);
     }
 
     setPhase('review');
-  }, [slots, captureFrame, room.id, sessionId, myName, identity]);
 
-  // Start dual countdown across both devices
+    if (activeSession) {
+      updateRoomSessionState(room.id, {
+        ...activeSession,
+        step: 'review',
+        timestamp: Date.now(),
+      });
+    }
+  }, [slots, captureFrame, room.id, sessionId, myName, identity, activeSession]);
+
+  // Start synchronized dual countdown on both devices
   const handleStartDualPhotobooth = async () => {
-    try {
+    if (activeSession) {
       await updateRoomSessionState(room.id, {
-        active: true,
-        sessionId,
-        startedBy: identity,
+        ...activeSession,
         step: 'counting',
         timestamp: Date.now(),
       });
-      setStatusMessage('Countdown started on both split screens!');
-      runSynchronizedBurst();
-    } catch (e: any) {
-      setError(e?.message || 'Failed to start synchronized photobooth.');
     }
+    setStatusMessage('Broadcasting 3-2-1 countdown to partner…');
+    runSynchronizedBurst();
   };
 
-  // Combine split-screen photos into alternating couple strip
+  // Merge split photos side-by-side into alternating strip
   useEffect(() => {
     if (phase !== 'review') return;
 
@@ -213,7 +243,7 @@ export function DualDistanceBooth({
     const finalPhotos = mergedPhotos.length > 0 ? mergedPhotos : myPhotos;
 
     const comp: Composition = {
-      layout: 'strip',
+      layout: layout || 'strip',
       photos: finalPhotos,
       filter,
       adjustments,
@@ -241,7 +271,7 @@ export function DualDistanceBooth({
       );
       await endRoomSession(room.id);
     } catch (e: any) {
-      console.warn('Room page save fallback:', e?.message);
+      console.warn('Room page save error:', e?.message);
     }
 
     onComplete(finalPhotos);
@@ -258,17 +288,17 @@ export function DualDistanceBooth({
 
   return (
     <div className="flex flex-col items-center gap-5">
-      {/* Header Badge */}
+      {/* Header Banner */}
       <div className="flex items-center gap-2 rounded-full bg-pink-100/90 px-4 py-1.5 text-xs font-bold text-pink-700 shadow-sm backdrop-blur">
         <Globe size={15} className="animate-pulse text-pink-500" />
-        <span>Live Distance Split-Screen Photobooth • Room {room.code}</span>
+        <span>Synchronized Split-Screen Photobooth • Room {room.code}</span>
       </div>
 
       {/* 50/50 SPLIT SCREEN CAMERA CONTAINER */}
       <div className="relative w-full max-w-4xl">
         <div className="relative overflow-hidden rounded-3xl bg-stone-950 p-2 shadow-2xl ring-4 ring-pink-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 aspect-[16/9]">
-            {/* LEFT HALF (YOUR CAMERA) */}
+            {/* LEFT HALF (YOUR CAMERA FEED) */}
             <div className="relative overflow-hidden rounded-2xl bg-stone-900 border border-stone-800">
               <video
                 ref={videoRef}
@@ -286,7 +316,7 @@ export function DualDistanceBooth({
               </div>
             </div>
 
-            {/* RIGHT HALF (PARTNER'S CAMERA / LIVE SNAP) */}
+            {/* RIGHT HALF (PARTNER'S LIVE CAMERA FEED / SNAP) */}
             <div className="relative overflow-hidden rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center">
               {partnerLatestSnap ? (
                 <img
@@ -299,7 +329,7 @@ export function DualDistanceBooth({
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-500/20 text-pink-400">
                     <User size={24} />
                   </div>
-                  <p className="text-xs font-medium">Waiting for {partnerName}'s camera feed…</p>
+                  <p className="text-xs font-medium">Connecting to {partnerName}'s live camera…</p>
                 </div>
               )}
               <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-pink-200 backdrop-blur">
@@ -319,7 +349,7 @@ export function DualDistanceBooth({
                 {count}
               </span>
               <p className="mt-2 text-base font-bold text-white drop-shadow">
-                Both split screens snapping together!
+                Both cameras snapping together!
               </p>
             </div>
           )}
@@ -328,7 +358,7 @@ export function DualDistanceBooth({
           {flash && <div className="absolute inset-0 bg-white animate-pulse" />}
 
           {/* STATUS NOTIFICATION */}
-          {phase === 'idle' && (
+          {phase === 'camera' && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-5 py-2 text-xs font-semibold text-white backdrop-blur">
               {statusMessage}
             </div>
@@ -339,7 +369,7 @@ export function DualDistanceBooth({
         {myPhotos.length > 0 && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <p className="text-xs font-bold text-pink-600">
-              Distance Split Shots ({myPhotos.length}/{slots})
+              Split-Screen Shots ({myPhotos.length}/{slots})
             </p>
             <div className="flex justify-center gap-2">
               {Array.from({ length: slots }).map((_, i) => (
@@ -370,7 +400,7 @@ export function DualDistanceBooth({
 
       {/* CONTROLS */}
       <div className="flex flex-wrap items-center justify-center gap-3">
-        {phase === 'idle' && (
+        {phase === 'camera' && (
           <>
             <Button
               size="lg"
@@ -378,7 +408,7 @@ export function DualDistanceBooth({
               disabled={!!error}
               className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg"
             >
-              <Zap size={18} className="fill-white" /> Start Split-Screen Photobooth ({slots} shots)
+              <Zap size={18} className="fill-white" /> Start Capturing Together ({slots} shots)
             </Button>
             <Button
               variant="ghost"
@@ -412,7 +442,7 @@ export function DualDistanceBooth({
                 setPartnerPhotos([]);
                 setPartnerLatestSnap(null);
                 setMergedPhotos([]);
-                setPhase('idle');
+                setPhase('camera');
               }}
             >
               <RotateCcw size={18} /> Retake

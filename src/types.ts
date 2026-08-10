@@ -74,7 +74,8 @@ export interface RoomSessionState {
   active: boolean;
   sessionId: string;
   startedBy: string;
-  step: 'idle' | 'counting' | 'review';
+  step: 'layout-picker' | 'camera' | 'counting' | 'review' | 'editor';
+  pickedLayout?: LayoutId;
   count?: number | null;
   slotIndex?: number;
   timestamp: number;

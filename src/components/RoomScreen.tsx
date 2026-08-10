@@ -9,16 +9,18 @@ import {
   loadRoomSession,
   clearRoomSession,
   startRoomSession,
+  pickRoomLayout,
   endRoomSession,
   type Room,
   type RoomPage,
 } from '@/lib/roomService';
-import type { Composition, AlbumPage, RoomMode } from '@/types';
+import type { Composition, AlbumPage, RoomMode, LayoutId } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { AlbumView } from '@/components/AlbumView';
 import { PageViewer } from '@/components/PageViewer';
 import { ExportModal } from '@/components/ExportModal';
 import { DualDistanceBooth } from '@/components/DualDistanceBooth';
+import { LayoutPicker } from '@/components/LayoutPicker';
 import {
   Heart,
   Users,
@@ -49,7 +51,11 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
   const [partnerOnline, setPartnerOnline] = useState(false);
   const [viewer, setViewer] = useState<AlbumPage | null>(null);
   const [exportComp, setExportComp] = useState<Composition | null>(null);
-  const [inDualBooth, setInDualBooth] = useState(false);
+
+  // Synchronized Room Session UI View State: 'album' | 'layout-picker' | 'camera'
+  const [activeStep, setActiveStep] = useState<'album' | 'layout-picker' | 'camera'>('album');
+  const [syncedLayout, setSyncedLayout] = useState<LayoutId>('strip');
+
   const subRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -66,20 +72,30 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
         if (!cancelled) setLoading(false);
       });
 
+    // Real-time synchronization listener across connected devices
     const unsub = subscribeRoomPages(session.room.id, (payload) => {
       if (payload.eventType === 'room_update') {
         const updated = payload.newPage as unknown as Room;
         if (updated) {
           setSession((s) => (s ? { ...s, room: updated } : s));
+
           if (updated.partner2_name || (updated.members && updated.members.length > 1)) {
             setPartnerOnline(true);
           }
 
-          // Auto-launch Split-Screen Distance Booth on partner's device!
-          if (updated.active_session && updated.active_session.active) {
-            setInDualBooth(true);
-          } else if (updated.active_session === null) {
-            setInDualBooth(false);
+          // SYNCHRONIZED STEP TRANSITIONS ACROSS BOTH DEVICES
+          const activeSession = updated.active_session;
+          if (activeSession && activeSession.active) {
+            if (activeSession.step === 'layout-picker') {
+              setActiveStep('layout-picker');
+            } else if (activeSession.step === 'camera' || activeSession.step === 'counting') {
+              if (activeSession.pickedLayout) {
+                setSyncedLayout(activeSession.pickedLayout);
+              }
+              setActiveStep('camera');
+            }
+          } else if (!activeSession || activeSession.active === false) {
+            setActiveStep('album');
           }
         }
         return;
@@ -135,24 +151,39 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
     }
   };
 
-  const handleOpenDualBooth = async () => {
+  // 1. Partner A or B clicks "Start Photobooth" -> Both devices enter Layout Picker!
+  const handleStartPhotoboothFlow = async () => {
     if (!session) return;
     try {
-      await startRoomSession(session.room.id, session.identity);
+      await startRoomSession(session.room.id, session.identity, 'layout-picker');
     } catch (e) {
-      console.error('Failed to broadcast room session start:', e);
+      console.error('Failed to start room photobooth flow:', e);
     }
-    setInDualBooth(true);
+    setActiveStep('layout-picker');
   };
 
-  const handleCloseDualBooth = async () => {
+  // 2. Either partner picks layout -> Both devices enter Split-Screen Camera!
+  const handlePickLayout = async (layout: LayoutId) => {
+    if (!session) return;
+    setSyncedLayout(layout);
+    if (session.room.active_session) {
+      try {
+        await pickRoomLayout(session.room.id, session.room.active_session, layout);
+      } catch (e) {
+        console.error('Failed to sync layout pick:', e);
+      }
+    }
+    setActiveStep('camera');
+  };
+
+  const handleClosePhotoboothFlow = async () => {
     if (!session) return;
     try {
       await endRoomSession(session.room.id);
     } catch {
       // silent
     }
-    setInDualBooth(false);
+    setActiveStep('album');
   };
 
   const handleLeave = () => {
@@ -161,7 +192,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
     setSession(null);
     setPages([]);
     setPartnerOnline(false);
-    setInDualBooth(false);
+    setActiveStep('album');
   };
 
   const handleDeletePage = async (id: string) => {
@@ -223,10 +254,10 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
             <CopyCode code={session.room.code} />
             <Button
               size="sm"
-              onClick={handleOpenDualBooth}
+              onClick={handleStartPhotoboothFlow}
               className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-sm"
             >
-              <Zap size={14} className="fill-white" /> Live Split Photobooth
+              <Zap size={14} className="fill-white" /> Start Photobooth Together
             </Button>
             <Button variant="soft" size="sm" onClick={() => onNewPhoto(session.room, session.identity)}>
               <Camera size={14} /> Add photo
@@ -238,16 +269,24 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
         </div>
       </div>
 
-      {inDualBooth ? (
+      {activeStep === 'layout-picker' ? (
+        <div className="py-6 px-4">
+          <LayoutPicker
+            onPick={handlePickLayout}
+            onBack={handleClosePhotoboothFlow}
+          />
+        </div>
+      ) : activeStep === 'camera' ? (
         <div className="py-6 px-4">
           <DualDistanceBooth
             room={session.room}
             identity={session.identity}
+            layout={syncedLayout}
             slots={4}
             filter="warm"
             adjustments={{ brightness: 1, contrast: 1, saturate: 1 }}
-            onComplete={handleCloseDualBooth}
-            onCancel={handleCloseDualBooth}
+            onComplete={handleClosePhotoboothFlow}
+            onCancel={handleClosePhotoboothFlow}
           />
         </div>
       ) : loading ? (
@@ -258,7 +297,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
         <AlbumView
           pages={albumPages}
           onDelete={handleDeletePage}
-          onNew={() => onNewPhoto(session.room, session.identity)}
+          onNew={handleStartPhotoboothFlow}
           onView={(p) => setViewer(p)}
         />
       )}

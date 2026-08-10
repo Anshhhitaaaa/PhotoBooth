@@ -117,13 +117,17 @@ export async function joinRoom(
 }
 
 /** Start a live distance photobooth session in the room (syncs to both devices) */
-export async function startRoomSession(roomId: string, startedBy: string): Promise<RoomSessionState> {
+export async function startRoomSession(
+  roomId: string,
+  startedBy: string,
+  initialStep: RoomSessionState['step'] = 'layout-picker',
+): Promise<RoomSessionState> {
   const sessionId = crypto.randomUUID();
   const state: RoomSessionState = {
     active: true,
     sessionId,
     startedBy,
-    step: 'idle',
+    step: initialStep,
     timestamp: Date.now(),
   };
 
@@ -137,6 +141,29 @@ export async function startRoomSession(roomId: string, startedBy: string): Promi
   }
 
   return state;
+}
+
+/** Update room layout choice and advance both devices to the camera split screen */
+export async function pickRoomLayout(
+  roomId: string,
+  currentSession: RoomSessionState,
+  pickedLayout: any,
+): Promise<void> {
+  const updatedState: RoomSessionState = {
+    ...currentSession,
+    step: 'camera',
+    pickedLayout,
+    timestamp: Date.now(),
+  };
+
+  try {
+    await query(
+      `UPDATE rooms SET active_session = $1::jsonb WHERE id = $2`,
+      [JSON.stringify(updatedState), roomId],
+    );
+  } catch (e) {
+    console.warn('pickRoomLayout warning:', e);
+  }
 }
 
 /** Update the live room session step (e.g. counting down) */
@@ -160,6 +187,25 @@ export async function endRoomSession(roomId: string): Promise<void> {
     );
   } catch (e) {
     console.warn('endRoomSession warning:', e);
+  }
+}
+
+/** Continuously upload live camera frame for real-time split-screen streaming */
+export async function uploadLiveCameraFrame(
+  roomId: string,
+  sessionId: string,
+  senderName: string,
+  senderId: string,
+  photoData: string,
+): Promise<void> {
+  try {
+    await query(
+      `INSERT INTO room_snaps (room_id, session_id, sender_name, sender_id, slot_index, photo_data)
+       VALUES ($1, $2, $3, $4, -1, $5)`,
+      [roomId, sessionId, senderName, senderId, photoData],
+    );
+  } catch {
+    // silent fallback for rapid frame streaming
   }
 }
 
