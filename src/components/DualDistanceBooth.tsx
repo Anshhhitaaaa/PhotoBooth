@@ -18,6 +18,7 @@ import { clsx } from '@/lib/utils';
 import {
   saveRoomSnap,
   loadLatestPartnerSnap,
+  loadRoomSnaps,
   uploadLiveCameraFrame,
   addRoomPage,
   updateRoomSessionState,
@@ -246,17 +247,62 @@ export function DualDistanceBooth({
   // AUTO-MERGE & TRANSITION DIRECTLY INTO STICKER & LAYOUT DECORATION STUDIO!
   useEffect(() => {
     if (phase !== 'review') return;
+    let cancelled = false;
 
     const buildDualFrames = async () => {
-      const mergedList: string[] = [];
+      setStatusMessage('Merging distance split-screen photos...');
+      const p1Shots = new Map<number, string>();
+      const p2Shots = new Map<number, string>();
 
+      // Poll Neon DB for up to 6 seconds to fetch both p1 and p2 snapped photos
+      for (let attempt = 0; attempt < 10; attempt++) {
+        if (cancelled) return;
+        try {
+          const snaps = await loadRoomSnaps(room.id, sessionId);
+          snaps.forEach((snap) => {
+            if (snap.sender_id === 'p1') {
+              p1Shots.set(snap.slot_index, snap.photo_data);
+            } else if (snap.sender_id === 'p2') {
+              p2Shots.set(snap.slot_index, snap.photo_data);
+            }
+          });
+
+          // Fallback to local taken photos for self if needed
+          myPhotos.forEach((photo, idx) => {
+            if (identity === 'p1' && !p1Shots.has(idx)) p1Shots.set(idx, photo);
+            if (identity === 'p2' && !p2Shots.has(idx)) p2Shots.set(idx, photo);
+          });
+
+          // Check if we have both p1 and p2 for all slots
+          let hasAll = true;
+          for (let i = 0; i < slots; i++) {
+            if (!p1Shots.has(i) || !p2Shots.has(i)) {
+              hasAll = false;
+              break;
+            }
+          }
+
+          if (hasAll || attempt === 9) {
+            break;
+          }
+        } catch (e) {
+          console.warn('Polling room snaps warning:', e);
+        }
+        await wait(600);
+      }
+
+      if (cancelled) return;
+
+      const mergedList: string[] = [];
       for (let i = 0; i < slots; i++) {
-        const p1Shot = identity === 'p1' ? myPhotos[i] : partnerPhotos[i];
-        const p2Shot = identity === 'p1' ? partnerPhotos[i] : myPhotos[i];
+        const p1Shot = p1Shots.get(i);
+        const p2Shot = p2Shots.get(i);
 
         if (p1Shot && p2Shot) {
           const dualFrame = await createDualSplitCanvas(p1Shot, p2Shot);
           mergedList.push(dualFrame);
+        } else if (p1Shot || p2Shot) {
+          mergedList.push((p1Shot || p2Shot)!);
         } else if (myPhotos[i]) {
           mergedList.push(myPhotos[i]);
         }
@@ -264,13 +310,14 @@ export function DualDistanceBooth({
 
       const finalPhotos = mergedList.length > 0 ? mergedList : myPhotos;
       setDualSplitPhotos(finalPhotos);
-      
-      // DIRECT AUTO TRANSITION TO STICKERS & LAYOUT STUDIO!
       onComplete(finalPhotos);
     };
 
     buildDualFrames();
-  }, [phase, slots, myPhotos, partnerPhotos, identity, onComplete]);
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, slots, myPhotos, room.id, sessionId, identity, onComplete]);
 
   const cssFilter = filterById(filter).css(adjustments);
 
