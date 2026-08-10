@@ -185,14 +185,11 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
   // 3. When photo capture completes -> Launch Decoration Studio (<Editor />)!
   const handleBoothComplete = (photos: string[]) => {
     if (!session) return;
-    const partnerName =
-      session.identity === 'p1'
-        ? session.room.partner2_name || 'Partner 2'
-        : session.room.partner1_name;
-    const myName =
-      session.identity === 'p1'
-        ? session.room.partner1_name
-        : session.room.partner2_name || 'Partner';
+    const p1Name = session.room.members?.find((m) => m.id === 'p1')?.name || session.room.partner1_name || 'Partner 1';
+    const p2Name = session.room.members?.find((m) => m.id === 'p2')?.name || session.room.partner2_name || 'Partner 2';
+
+    const partnerName = session.identity === 'p1' ? p2Name : p1Name;
+    const myName = session.identity === 'p1' ? p1Name : p2Name;
 
     setEditorComp({
       layout: syncedLayout,
@@ -325,10 +322,9 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
           onSave={async (title, section, comp) => {
             try {
               const thumb = await renderToDataURL(comp, 0.4);
-              const authorName =
-                session.identity === 'p1'
-                  ? session.room.partner1_name
-                  : session.room.partner2_name || 'Partner';
+              const p1Name = session.room.members?.find((m) => m.id === 'p1')?.name || session.room.partner1_name || 'Partner 1';
+              const p2Name = session.room.members?.find((m) => m.id === 'p2')?.name || session.room.partner2_name || 'Partner 2';
+              const authorName = session.identity === 'p1' ? p1Name : p2Name;
               await addRoomPage(session.room.id, authorName, title, section, comp, thumb);
               await endRoomSession(session.room.id);
             } catch (e: any) {

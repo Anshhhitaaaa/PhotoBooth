@@ -68,15 +68,11 @@ export function DualDistanceBooth({
   const [dualSplitPhotos, setDualSplitPhotos] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState('Split-Screen Live Distance Camera Connected');
 
-  const myName =
-    identity === 'p1'
-      ? room.partner1_name
-      : room.partner2_name || identity.toUpperCase();
+  const p1Name = room.members?.find((m) => m.id === 'p1')?.name || room.partner1_name || 'Partner 1';
+  const p2Name = room.members?.find((m) => m.id === 'p2')?.name || room.partner2_name || 'Partner 2';
 
-  const partnerName =
-    identity === 'p1'
-      ? room.partner2_name || 'Partner 2'
-      : room.partner1_name;
+  const myName = identity === 'p1' ? p1Name : p2Name;
+  const partnerName = identity === 'p1' ? p2Name : p1Name;
 
   // Initialize Local Webcam with crisp HD 1080p @ 60 FPS
   const startCamera = useCallback(async () => {

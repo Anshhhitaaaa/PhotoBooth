@@ -74,7 +74,9 @@ export default function App() {
   const handleRoomSave = async (title: string, section: string, comp: Composition) => {
     if (!roomCtx) return;
     const thumb = await renderToDataURL(comp, 0.4);
-    const author = roomCtx.identity === 'p1' ? roomCtx.room.partner1_name : roomCtx.room.partner2_name || 'Partner 2';
+    const p1Name = roomCtx.room.members?.find((m) => m.id === 'p1')?.name || roomCtx.room.partner1_name || 'Partner 1';
+    const p2Name = roomCtx.room.members?.find((m) => m.id === 'p2')?.name || roomCtx.room.partner2_name || 'Partner 2';
+    const author = roomCtx.identity === 'p1' ? p1Name : p2Name;
     try {
       await addRoomPage(roomCtx.room.id, author, title, section, comp, thumb);
     } catch (e: any) {

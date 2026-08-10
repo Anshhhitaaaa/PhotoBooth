@@ -32,8 +32,15 @@ export async function ensureRoomTablesExist(): Promise<void> {
         active_session JSONB DEFAULT '{}'::jsonb,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
-      ALTER TABLE rooms ADD COLUMN IF NOT EXISTS active_session JSONB DEFAULT '{}'::jsonb;
+    `);
+    await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS mode VARCHAR(20) NOT NULL DEFAULT 'couple';`);
+    await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS partner1_name TEXT NOT NULL DEFAULT 'Partner 1';`);
+    await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS partner2_name TEXT;`);
+    await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS names TEXT NOT NULL DEFAULT '';`);
+    await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS members JSONB NOT NULL DEFAULT '[]'::jsonb;`);
+    await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS active_session JSONB DEFAULT '{}'::jsonb;`);
 
+    await query(`
       CREATE TABLE IF NOT EXISTS room_snaps (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
@@ -44,7 +51,9 @@ export async function ensureRoomTablesExist(): Promise<void> {
         photo_data TEXT NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
 
+    await query(`
       CREATE TABLE IF NOT EXISTS room_pages (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
@@ -506,10 +515,31 @@ export function createLiveSignalChannel(
 }
 
 function parseRoom(r: any): Room {
+  const members: RoomMember[] = typeof r.members === 'string' ? JSON.parse(r.members) : r.members || [];
+  const active_session = typeof r.active_session === 'string' ? JSON.parse(r.active_session) : r.active_session || null;
+
+  const p1Member = members.find((m) => m.id === 'p1');
+  const p2Member = members.find((m) => m.id === 'p2');
+
+  const partner1_name = p1Member?.name || r.partner1_name || 'Partner 1';
+  const partner2_name = p2Member?.name || r.partner2_name || null;
+
+  let names = r.names;
+  if (!names || names === 'Partner 1' || names === 'Partner 1 & Partner 2' || names.includes('Partner 1')) {
+    if (partner1_name && partner2_name) {
+      names = `${partner1_name} & ${partner2_name}`;
+    } else {
+      names = partner1_name;
+    }
+  }
+
   return {
     ...r,
-    members: typeof r.members === 'string' ? JSON.parse(r.members) : r.members || [],
-    active_session: typeof r.active_session === 'string' ? JSON.parse(r.active_session) : r.active_session || null,
+    partner1_name,
+    partner2_name,
+    names,
+    members,
+    active_session,
   };
 }
 
