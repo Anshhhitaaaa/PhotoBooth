@@ -115,16 +115,16 @@ export function DualDistanceBooth({
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 360;
-    canvas.height = 270;
+    canvas.width = 240;
+    canvas.height = 180;
     const ctx = canvas.getContext('2d')!;
     if (facing === 'user') {
-      ctx.translate(360, 0);
+      ctx.translate(240, 0);
       ctx.scale(-1, 1);
     }
     ctx.filter = filterById(filter).css(adjustments);
-    ctx.drawImage(video, 0, 0, 360, 270);
-    return canvas.toDataURL('image/jpeg', 0.45);
+    ctx.drawImage(video, 0, 0, 240, 180);
+    return canvas.toDataURL('image/jpeg', 0.25);
   }, [filter, adjustments, facing]);
 
   // Capture full uncompressed 1080p HD shot for photobooth burst
@@ -254,8 +254,8 @@ export function DualDistanceBooth({
       const p1Shots = new Map<number, string>();
       const p2Shots = new Map<number, string>();
 
-      // Poll Neon DB for up to 6 seconds to fetch both p1 and p2 snapped photos
-      for (let attempt = 0; attempt < 10; attempt++) {
+      // Poll Neon DB for up to 8 seconds to fetch both p1 and p2 snapped photos
+      for (let attempt = 0; attempt < 15; attempt++) {
         if (cancelled) return;
         try {
           const snaps = await loadRoomSnaps(room.id, sessionId);
@@ -282,13 +282,13 @@ export function DualDistanceBooth({
             }
           }
 
-          if (hasAll || attempt === 9) {
+          if (hasAll || attempt === 14) {
             break;
           }
         } catch (e) {
           console.warn('Polling room snaps warning:', e);
         }
-        await wait(600);
+        await wait(400);
       }
 
       if (cancelled) return;

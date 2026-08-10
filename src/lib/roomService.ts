@@ -354,7 +354,7 @@ export async function loadLatestPartnerSnap(
 /** Load all snaps for a specific live session in a room. */
 export async function loadRoomSnaps(roomId: string, sessionId: string): Promise<RoomSnap[]> {
   const rows = await query<RoomSnap>(
-    `SELECT * FROM room_snaps WHERE room_id = $1 AND session_id = $2 ORDER BY slot_index ASC`,
+    `SELECT * FROM room_snaps WHERE room_id = $1 AND session_id = $2 AND slot_index >= 0 ORDER BY slot_index ASC, created_at DESC`,
     [roomId, sessionId],
   );
   return rows || [];
