@@ -3,9 +3,9 @@
 # 💕 Love Booth — Real-Time Long Distance & Friends Photobooth
 
 <p align="center">
-  <b>A real-time, 50/50 split-screen online photobooth app for long-distance couples & friends!</b>
+  <b>A real-time 50/50 split-screen online photobooth app for long-distance couples & friends!</b>
   <br />
-  <span>Snap photos together live across any distance, customize with filters & stickers, and save shared scrapbook memories.</span>
+  <span>Snap photos together live across any distance, customize with cute emojis, doodle stickers & paper designs, and save shared scrapbook memories.</span>
 </p>
 
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
@@ -15,98 +15,134 @@
 [![Neon Postgres](https://img.shields.io/badge/Neon_Postgres-Serverless-00E599?style=for-the-badge&logo=postgresql&logoColor=black)](https://neon.tech/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-[🌐 Live Demo](https://photo-booth-psi-three.vercel.app/) • [⚡ Neon DB Schema](neon_schema.sql) • [🐞 Report Bug](https://github.com/Anshhhitaaaa/PhotoBooth/issues)
+[🌐 Live Demo App](https://photo-booth-psi-three.vercel.app/) • [⚡ Neon Database Schema](neon_schema.sql) • [🐞 Report Issue](https://github.com/Anshhhitaaaa/PhotoBooth/issues)
 
 ---
 
 </div>
 
-## ✨ What Makes Love Booth Special?
+## ✨ Key Features & Highlights
 
 > *Distance means so little when someone means so much.* 💖
 
 **Love Booth** lets couples and friends capture instant, side-by-side photobooth memories together—no matter how many miles apart they are.
 
-- 👯 **Dual Split-Screen Camera**: 50/50 split screen showing your live camera feed alongside your partner's live feed.
-- ⚡ **Synchronized 3-2-1 Countdown**: Trigger simultaneous photo captures on both devices with synchronized countdowns.
-- 🔑 **Instant Private Rooms**: Create Couple Rooms or Friends Group Rooms with 6-letter room access codes.
-- 🎨 **Pro Photo Filters & Adjustments**: Vintage, Warm, Sepia, Black & White, and Polaroid presets with dynamic brightness/contrast sliders.
-- 🎀 **Interactive Drag & Drop Sticker Studio**: Layer, rotate, and scale emoji stickers onto custom paper canvas themes (*Rose, Cream, Mint, Sky*).
-- 📖 **Live Cloud Scrapbook**: Completed photo strips are automatically saved to Neon Postgres and synced to all room members in real time.
+### 👯 **Real-Time 50/50 Split-Screen Camera**
+- Displays your webcam feed on the left half alongside your partner's live feed on the right half.
+- Optimized 60 FPS video performance powered by 1.5KB low-bandwidth micro snapshots.
+
+### ⚡ **Synchronized Room State Machine**
+- When either partner clicks **"Start Photobooth Together"**, both screens transition simultaneously into the **Layout Picker**.
+- Either partner can select the layout (**Photo Strip**, **Polaroid**, or **2x2 Grid**) to navigate both devices to the camera screen at the exact same millisecond.
+- Triggering the countdown launches a synchronized **3-2-1 burst capture** across both cameras.
+
+### 📸 **Dual Split Photo Compositing (`drawCoverImage`)**
+- Merges Partner 1 (Left 50%) and Partner 2 (Right 50%) side-by-side into **EVERY SINGLE PHOTO FRAME** in your chosen layout.
+- Utilizes canvas crop-center algorithms to preserve natural proportions without stretching or squishing.
+
+### 🎀 **Post-Capture Decoration Studio**
+- Automatically transitions both partners into the **Decoration Studio** right after photo capture.
+- **8 Categorized Sticker & Emoji Packs**:
+  - `❤️ Doodle Hearts & Love Stamps`
+  - `🥰 Cute Expressions & Faces`
+  - `🌸 Retro Flowers & Floral Doodles`
+  - `🧸 Cute Plushies & Animals`
+  - `🎀 Coquette & Aesthetic`
+  - `🍓 Sweet Treats & Boba Drinks`
+  - `✈️ LDR & Travel Memories`
+  - `✨ Sparkles & Magic Symbols`
+- **8 Cute Paper Background Themes**:
+  - 🍦 *Vanilla Cream*, 🌸 *Rose Pink*, 🌿 *Matcha Mint*, ☁️ *Sky Blue*, 💜 *Lavender Glow*, 🍓 *Strawberry Shortcake*, 🖤 *Midnight Black*, 🎀 *Coquette Blush*.
+
+### 📖 **Cloud Shared Scrapbook Album**
+- Completed photo strips automatically save to Neon Postgres and sync to all room members in a **Bento Masonry Grid**.
 
 ---
 
 ## 🛠️ Tech Stack & Architecture
 
-### **Frontend & UX**
-- **React 18** + **TypeScript**: Strict type checking across room sessions, compositions, and hardware buffers.
-- **Vite 5**: Blazing fast HMR and lightweight production bundle.
-- **TailwindCSS**: Glassmorphism, smooth animations, and custom theme tokens.
-- **HTML5 Canvas 2D Engine**: High-res client-side canvas rendering for downloadable photo strips.
+### **Frontend & User Experience**
+- **React 18** + **TypeScript**: Strict type checking across room sessions, compositions, stickers, and camera buffers.
+- **Vite 5**: Fast build tooling and hot module replacement.
+- **TailwindCSS**: Glassmorphism design system, custom HSL theme tokens, animations, and micro-interactions.
+- **HTML5 Canvas 2D Engine**: High-res client-side rendering pipeline for downloadable PNG photo strips.
 
-### **Backend & Real-Time Sync**
-- **Neon Postgres**: Serverless PostgreSQL communicating over HTTPS via `@neondatabase/serverless`.
-- **Zero-Latency Polling & Signal Broadcaster**: Synchronizes room session state (`active_session`) and split-screen captures.
+### **Backend & Real-Time Infrastructure**
+- **Neon Postgres**: Serverless PostgreSQL database architecture communicating over HTTPS via `@neondatabase/serverless`.
+- **Low-Bandwidth Synchronous State Polling**: Real-time room session state machine (`active_session`) and snap sync.
 
 ---
 
-## 📁 Repository Directory Map
+## 📁 Repository Structure
 
 ```
 PhotoBooth/
 ├── src/
 │   ├── components/
-│   │   ├── DualDistanceBooth.tsx  # 50/50 split-screen live camera engine
-│   │   ├── RoomScreen.tsx         # Room lobby, member status & album scrapbook
-│   │   ├── Editor.tsx             # Photo strip editor & sticker compositor
-│   │   ├── Photobooth.tsx         # Single camera photo burst
-│   │   ├── Home.tsx               # Main hero section & features navbar
-│   │   ├── AlbumView.tsx          # Saved scrapbook gallery
+│   │   ├── DualDistanceBooth.tsx  # 50/50 split-screen real-time camera & burst engine
+│   │   ├── RoomScreen.tsx         # Room lobby, synchronized state machine & scrapbook
+│   │   ├── Editor.tsx             # Post-capture Decoration Studio & sticker canvas
+│   │   ├── LayoutPicker.tsx       # Bento Grid layout selector (Strip, Polaroid, Grid)
+│   │   ├── StickerDrawer.tsx      # Categorized sticker & emoji drawer
+│   │   ├── ControlPanel.tsx       # Paper background themes & filter controls
+│   │   ├── Photobooth.tsx         # Local camera burst capture
+│   │   ├── Home.tsx               # Hero landing section & navbar
+│   │   ├── AlbumView.tsx          # Masonry shared album scrapbook
 │   │   └── ExportModal.tsx        # High-res photo strip PNG downloader
 │   ├── lib/
-│   │   ├── db.ts                  # Neon Postgres connection driver
-│   │   ├── roomService.ts         # Real-time room, snap & album page services
-│   │   └── render.ts              # Canvas 2D rendering pipeline
-│   ├── types.ts                   # Centralized TypeScript definitions
+│   │   ├── db.ts                  # Neon Postgres database driver
+│   │   ├── roomService.ts         # Real-time room, session state & album page services
+│   │   ├── render.ts              # High-res HTML5 canvas rendering engine
+│   │   ├── filters.ts             # Custom CSS & Canvas image filter algorithms
+│   │   └── stickers.ts            # Expanded sticker & emoji collections
+│   ├── types.ts                   # Centralized TypeScript interface definitions
 │   └── App.tsx                    # Top-level view routing controller
 ├── public/
 │   ├── favicon.svg                # Custom Love Booth SVG logo
-│   └── og-image.svg               # OpenGraph preview banner
+│   └── og-image.svg               # OpenGraph preview card banner
 ├── neon_schema.sql                # PostgreSQL database schema & migration script
-├── vercel.json                    # Vercel SPA routing rules
-└── package.json                   # Project dependencies & scripts
+├── vercel.json                    # Single-page application route rewrites for Vercel
+└── package.json                   # Project dependencies & npm scripts
 ```
 
 ---
 
-## ⚡ Quickstart & Local Setup
+## ⚡ Local Development Setup
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/Anshhhitaaaa/PhotoBooth.git
-cd PhotoBooth
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/Anshhhitaaaa/PhotoBooth.git
+   cd PhotoBooth
+   ```
 
-# 2. Install dependencies
-npm install
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-# 3. Create environment configuration (.env)
-echo "VITE_NEON_DATABASE_URL=postgresql://your-neon-db-url?sslmode=require" > .env
+3. **Configure Environment Variables**:
+   Create a `.env` file in the root directory:
+   ```env
+   VITE_NEON_DATABASE_URL=postgresql://your-neon-database-connection-string?sslmode=require
+   ```
 
-# 4. Initialize database schema
-# Run neon_schema.sql in your Neon Console (https://console.neon.tech)
+4. **Initialize Database Schema**:
+   Copy and execute `neon_schema.sql` inside your [Neon Console SQL Editor](https://console.neon.tech).
 
-# 5. Launch local server
-npm run dev
-```
+5. **Launch Development Server**:
+   ```bash
+   npm run dev
+   ```
 
 ---
 
 ## 🚀 Deployment (Vercel)
 
+This application is fully optimized for single-click deployment on Vercel:
+
 1. Import this repository into your **[Vercel Dashboard](https://vercel.com/new)**.
-2. Add Environment Variable:
-   - `VITE_NEON_DATABASE_URL` = `your-neon-postgres-connection-string`
-3. Click **Deploy**!
+2. Under **Environment Variables**, add `VITE_NEON_DATABASE_URL` with your Neon Postgres connection string.
+3. Click **Deploy**! Single-page application rewrites are pre-configured in `vercel.json`.
 
 ---
 
