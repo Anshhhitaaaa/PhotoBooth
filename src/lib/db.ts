@@ -1,9 +1,12 @@
 import { neon } from '@neondatabase/serverless';
 
+const DEFAULT_DATABASE_URL =
+  'postgresql://neondb_owner:npg_kBYfVhTP0uC1@ep-noisy-snow-aygvifcg-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+
 const databaseUrl =
   import.meta.env.VITE_NEON_DATABASE_URL ||
   import.meta.env.DATABASE_URL ||
-  '';
+  DEFAULT_DATABASE_URL;
 
 /** Returns Neon SQL client instance or null if unconfigured */
 export function getDb() {
