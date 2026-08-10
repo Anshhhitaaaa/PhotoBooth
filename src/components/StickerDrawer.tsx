@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Star, StarOff, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Star, StarOff, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { STICKER_CATEGORIES, ALL_STICKERS } from '@/lib/stickers';
 import { loadFavoriteStickers, saveFavoriteStickers } from '@/lib/storage';
 import { clsx } from '@/lib/utils';
@@ -13,6 +13,7 @@ export function StickerDrawer({ onAdd, onClose }: Props) {
   const [active, setActive] = useState<string>(STICKER_CATEGORIES[0].category);
   const [favorites, setFavorites] = useState<string[]>(() => loadFavoriteStickers());
   const [showFav, setShowFav] = useState(false);
+  const catNavRef = useRef<HTMLDivElement>(null);
 
   const toggleFav = (g: string) => {
     const next = favorites.includes(g)
@@ -20,6 +21,21 @@ export function StickerDrawer({ onAdd, onClose }: Props) {
       : [...favorites, g];
     setFavorites(next);
     saveFavoriteStickers(next);
+  };
+
+  const handleCatWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (catNavRef.current && e.deltaY !== 0) {
+      catNavRef.current.scrollLeft += e.deltaY * 1.2;
+    }
+  };
+
+  const scrollCatNav = (dir: 'left' | 'right') => {
+    if (catNavRef.current) {
+      catNavRef.current.scrollBy({
+        left: dir === 'left' ? -180 : 180,
+        behavior: 'smooth',
+      });
+    }
   };
 
   const glyphs = showFav
@@ -35,36 +51,60 @@ export function StickerDrawer({ onAdd, onClose }: Props) {
         </button>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto px-3 py-2.5 no-scrollbar border-b border-pink-100/40">
+      {/* Category Navigation Bar with Scroll Buttons */}
+      <div className="relative flex items-center border-b border-pink-100/40 bg-[#fdfbf7]/60 px-1 py-1.5">
         <button
-          onClick={() => setShowFav(true)}
-          className={clsx(
-            'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors',
-            showFav ? 'bg-amber-100 text-amber-600' : 'text-[#7c6670] hover:bg-pink-50',
-          )}
+          onClick={() => scrollCatNav('left')}
+          className="z-10 rounded-full p-1 text-[#8c7680] hover:bg-[#ffeef4] hover:text-[#ff4d79] transition-colors shrink-0"
+          title="Scroll left"
         >
-          <Star size={12} className="fill-amber-400 text-amber-400" /> Favorites
+          <ChevronLeft size={16} />
         </button>
-        {STICKER_CATEGORIES.map((c) => (
+
+        <div
+          ref={catNavRef}
+          onWheel={handleCatWheel}
+          className="flex flex-1 gap-1 overflow-x-auto px-1 py-1 no-scrollbar scroll-smooth"
+        >
           <button
-            key={c.category}
-            onClick={() => {
-              setActive(c.category);
-              setShowFav(false);
-            }}
+            onClick={() => setShowFav(true)}
             className={clsx(
-              'shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors',
-              !showFav && active === c.category
-                ? 'bg-[#ff4d79] text-white shadow-sm'
-                : 'text-[#7c6670] hover:bg-[#ffeef4]',
+              'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors',
+              showFav ? 'bg-amber-100 text-amber-600' : 'text-[#7c6670] hover:bg-pink-50',
             )}
           >
-            {c.category}
+            <Star size={12} className="fill-amber-400 text-amber-400" /> Favorites
           </button>
-        ))}
+          {STICKER_CATEGORIES.map((c) => (
+            <button
+              key={c.category}
+              onClick={() => {
+                setActive(c.category);
+                setShowFav(false);
+              }}
+              className={clsx(
+                'shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors whitespace-nowrap',
+                !showFav && active === c.category
+                  ? 'bg-[#ff4d79] text-white shadow-sm'
+                  : 'text-[#7c6670] hover:bg-[#ffeef4]',
+              )}
+            >
+              {c.category}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => scrollCatNav('right')}
+          className="z-10 rounded-full p-1 text-[#8c7680] hover:bg-[#ffeef4] hover:text-[#ff4d79] transition-colors shrink-0"
+          title="Scroll right"
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
-      <div className="grid flex-1 grid-cols-6 gap-1 overflow-y-auto p-3 sm:grid-cols-8">
+      {/* Emoji Grid Container */}
+      <div className="grid flex-1 min-h-0 grid-cols-6 gap-1 overflow-y-auto p-3 sm:grid-cols-8 scroll-smooth">
         {glyphs.length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center gap-2 py-10 text-[#8c7680]">
             <StarOff size={28} />

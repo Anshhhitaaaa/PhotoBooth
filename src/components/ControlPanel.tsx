@@ -78,15 +78,15 @@ export function ControlPanel({ comp, onChange }: Props) {
 
       {/* Border */}
       <Section icon={Frame} title="Border">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {BORDERS.map((b) => (
             <button
               key={b.id}
               onClick={() => set('border', b.id as BorderId)}
               className={clsx(
-                'rounded-xl border-2 px-2 py-2 text-xs font-semibold transition-all',
+                'rounded-xl border-2 px-2 py-2 text-xs font-semibold transition-all text-center leading-tight',
                 comp.border === b.id
-                  ? 'border-pink-400 bg-pink-50 text-pink-700'
+                  ? 'border-pink-400 bg-pink-50 text-pink-700 font-bold scale-[1.02]'
                   : 'border-stone-200 text-stone-500 hover:border-pink-200',
               )}
             >

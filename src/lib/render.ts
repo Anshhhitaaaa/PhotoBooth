@@ -107,6 +107,134 @@ function drawWashiCorners(ctx: CanvasRenderingContext2D, w: number, h: number) {
   tape(w - 40, h - 18, -0.3, 'rgba(187, 247, 208, 0.85)');
 }
 
+function drawHeartBorder(ctx: CanvasRenderingContext2D, pw: number, ph: number) {
+  ctx.fillStyle = '#fff0f5';
+  roundRect(ctx, 0, 0, pw, ph, 12);
+  ctx.fill();
+  ctx.strokeStyle = '#f472b6';
+  ctx.lineWidth = 3;
+  roundRect(ctx, 6, 6, pw - 12, ph - 12, 10);
+  ctx.stroke();
+
+  ctx.font = '14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('💖', 18, 18);
+  ctx.fillText('💖', pw - 18, 18);
+  ctx.fillText('💖', 18, ph - 18);
+  ctx.fillText('💖', pw - 18, ph - 18);
+}
+
+function drawStampBorder(ctx: CanvasRenderingContext2D, pw: number, ph: number) {
+  ctx.fillStyle = '#fffdfa';
+  ctx.fillRect(0, 0, pw, ph);
+
+  ctx.fillStyle = '#fdfbf7';
+  const r = 5;
+  const step = 16;
+  for (let x = step / 2; x < pw; x += step) {
+    ctx.beginPath();
+    ctx.arc(x, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, ph, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (let y = step / 2; y < ph; y += step) {
+    ctx.beginPath();
+    ctx.arc(0, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(pw, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(pw - 35, 35, 18, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.font = '8px sans-serif';
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('PASSPORT', pw - 35, 35);
+  ctx.restore();
+}
+
+function drawNeonBorder(ctx: CanvasRenderingContext2D, pw: number, ph: number) {
+  ctx.fillStyle = '#0f0916';
+  roundRect(ctx, 0, 0, pw, ph, 10);
+  ctx.fill();
+
+  ctx.save();
+  ctx.shadowColor = '#ff4d79';
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = '#ff4d79';
+  ctx.lineWidth = 3;
+  roundRect(ctx, 8, 8, pw - 16, ph - 16, 8);
+  ctx.stroke();
+
+  ctx.shadowColor = '#c084fc';
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = '#c084fc';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, 12, 12, pw - 24, ph - 24, 6);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawGoldBorder(ctx: CanvasRenderingContext2D, pw: number, ph: number) {
+  ctx.fillStyle = '#fffdf7';
+  roundRect(ctx, 0, 0, pw, ph, 10);
+  ctx.fill();
+
+  ctx.save();
+  const grad = ctx.createLinearGradient(0, 0, pw, ph);
+  grad.addColorStop(0, '#d97706');
+  grad.addColorStop(0.3, '#fef08a');
+  grad.addColorStop(0.7, '#b45309');
+  grad.addColorStop(1, '#fde047');
+
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 4;
+  roundRect(ctx, 6, 6, pw - 12, ph - 12, 8);
+  ctx.stroke();
+
+  ctx.lineWidth = 1;
+  roundRect(ctx, 12, 12, pw - 24, ph - 24, 6);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDottedBorder(ctx: CanvasRenderingContext2D, pw: number, ph: number) {
+  ctx.fillStyle = '#fcfbf8';
+  roundRect(ctx, 0, 0, pw, ph, 10);
+  ctx.fill();
+
+  ctx.save();
+  ctx.strokeStyle = '#a8a29e';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 4]);
+  roundRect(ctx, 8, 8, pw - 16, ph - 16, 8);
+  ctx.stroke();
+
+  ctx.fillStyle = '#78716c';
+  const corners = [
+    [16, 16],
+    [pw - 16, 16],
+    [16, ph - 16],
+    [pw - 16, ph - 16],
+  ];
+  corners.forEach(([cx, cy]) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
 /** Draw a single photo into a target rect with object-fit: cover. */
 function drawPhotoCover(
   ctx: CanvasRenderingContext2D,
@@ -140,7 +268,7 @@ function drawPhotoCover(
 
 /** Returns the photo slot rects for a given layout within the printable area. */
 function photoRects(layout: LayoutId, pw: number, ph: number, border: BorderId) {
-  const pad = border === 'polaroid' ? 28 : 18;
+  const pad = border === 'polaroid' ? 28 : (border === 'stamp' ? 24 : 18);
   const innerX = pad;
   const innerY = pad;
   const innerW = pw - pad * 2;
@@ -195,6 +323,16 @@ function drawBorder(
     roundRect(ctx, 0, 0, pw, ph, 8);
     ctx.fill();
     drawWashiCorners(ctx, pw, ph);
+  } else if (border === 'hearts') {
+    drawHeartBorder(ctx, pw, ph);
+  } else if (border === 'stamp') {
+    drawStampBorder(ctx, pw, ph);
+  } else if (border === 'neon') {
+    drawNeonBorder(ctx, pw, ph);
+  } else if (border === 'gold') {
+    drawGoldBorder(ctx, pw, ph);
+  } else if (border === 'dotted') {
+    drawDottedBorder(ctx, pw, ph);
   }
   ctx.restore();
 }

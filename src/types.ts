@@ -7,7 +7,16 @@ export type FilterId =
   | 'sepia'
   | 'polaroid';
 
-export type BorderId = 'polaroid' | 'filmstrip' | 'scalloped' | 'washi';
+export type BorderId =
+  | 'polaroid'
+  | 'filmstrip'
+  | 'scalloped'
+  | 'washi'
+  | 'hearts'
+  | 'stamp'
+  | 'neon'
+  | 'gold'
+  | 'dotted';
 
 export type LayoutId = 'strip' | 'polaroid' | 'grid';
 

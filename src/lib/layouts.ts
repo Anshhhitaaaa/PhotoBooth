@@ -38,7 +38,12 @@ export const layoutById = (id: LayoutId) => LAYOUTS.find((l) => l.id === id) ?? 
 
 export const BORDERS: { id: BorderId; label: string }[] = [
   { id: 'polaroid', label: 'Polaroid White' },
-  { id: 'filmstrip', label: 'Filmstrip' },
+  { id: 'filmstrip', label: 'Filmstrip Black' },
   { id: 'scalloped', label: 'Scalloped Edge' },
   { id: 'washi', label: 'Washi Tape' },
+  { id: 'hearts', label: 'Heart Lace 💖' },
+  { id: 'stamp', label: 'Postage Stamp 📮' },
+  { id: 'neon', label: 'Neon Cyber Glow ✨' },
+  { id: 'gold', label: 'Gold Luxe ✨' },
+  { id: 'dotted', label: 'Pearl Stitch 🪡' },
 ];
