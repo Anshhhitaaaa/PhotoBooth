@@ -45,17 +45,20 @@ const COMMUNITY_PHOTOS = [
 ];
 
 const FLOATING_STICKERS = [
-  { char: '🌸', left: '6%', top: '22%' },
-  { char: '💕', left: '88%', top: '18%' },
-  { char: '🎀', left: '92%', top: '8%' },
-  { char: '🦋', left: '3%', top: '42%' },
-  { char: '💌', left: '8%', top: '56%' },
-  { char: '✨', left: '84%', top: '48%' },
-  { char: '💖', left: '94%', top: '62%' },
-  { char: '🌙', left: '34%', top: '48%' },
-  { char: '⭐', left: '64%', top: '54%' },
-  { char: '🍓', left: '26%', top: '92%' },
-  { char: '🌸', left: '68%', top: '28%' },
+  { char: '💫', left: '6%', top: '12%', anim: 'floatGentle', duration: '5s', delay: '0s', size: 'text-2xl sm:text-3xl' },
+  { char: '💖', left: '23%', top: '2%', anim: 'floatSlowBob', duration: '6s', delay: '0.8s', size: 'text-2xl sm:text-3xl' },
+  { char: '🌙', left: '52%', top: '20%', anim: 'floatGentle', duration: '5.5s', delay: '0.2s', size: 'text-xl sm:text-2xl' },
+  { char: '💌', left: '28%', top: '26%', anim: 'floatSlowBob', duration: '5.8s', delay: '1.2s', size: 'text-xl sm:text-2xl' },
+  { char: '🌼', left: '22%', top: '36%', anim: 'floatGentle', duration: '6.2s', delay: '0.4s', size: 'text-2xl sm:text-3xl' },
+  { char: '🌸', left: '76%', top: '28%', anim: 'floatSlowBob', duration: '5.4s', delay: '1.0s', size: 'text-2xl sm:text-3xl' },
+  { char: '✨', left: '64%', top: '39%', anim: 'floatGentle', duration: '4.8s', delay: '0.6s', size: 'text-xl sm:text-2xl' },
+  { char: '💖', left: '54%', top: '44%', anim: 'floatSlowBob', duration: '5.6s', delay: '1.4s', size: 'text-2xl sm:text-3xl' },
+  { char: '💕', left: '93%', top: '30%', anim: 'floatGentle', duration: '6.5s', delay: '0.3s', size: 'text-2xl sm:text-3xl' },
+  { char: '🦋', left: '90%', top: '50%', anim: 'floatSlowBob', duration: '7.0s', delay: '0.9s', size: 'text-2xl sm:text-3xl' },
+  { char: '🌷', left: '95%', top: '70%', anim: 'floatGentle', duration: '5.2s', delay: '1.1s', size: 'text-xl sm:text-2xl' },
+  { char: '🎀', left: '53%', top: '66%', anim: 'floatSlowBob', duration: '6.0s', delay: '0.5s', size: 'text-2xl sm:text-3xl' },
+  { char: '✨', left: '23%', top: '86%', anim: 'floatGentle', duration: '4.6s', delay: '1.3s', size: 'text-xl sm:text-2xl' },
+  { char: '💌', left: '1%', top: '95%', anim: 'floatSlowBob', duration: '5.5s', delay: '0.7s', size: 'text-2xl sm:text-3xl' },
 ];
 
 const FAQS = [
@@ -104,7 +107,7 @@ export function Home({ pages, onNew, onOpenAlbum, onOpenRoom, musicOn, onToggleM
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#fdfbf7] text-[#5c4a52] selection:bg-pink-100 selection:text-pink-600">
-      {/* Top Header Nav (Matching Image 1) */}
+      {/* Top Header Nav */}
       <nav className="fixed top-0 left-0 right-0 z-40 bg-[#fdfbf7]/80 backdrop-blur-md px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-2">
@@ -130,40 +133,40 @@ export function Home({ pages, onNew, onOpenAlbum, onOpenRoom, musicOn, onToggleM
         </div>
       </nav>
 
-      {/* Hero Section (Matching Image 1 Exact Design & Typography) */}
-      <section ref={heroRef} className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-24 pb-16 text-center">
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-24 pb-16 text-center overflow-hidden">
         {/* Ambient Floating Stickers Scattered in Background */}
         {FLOATING_STICKERS.map((s, i) => (
           <span
             key={i}
-            className="pointer-events-none absolute text-3xl opacity-70 sm:text-4xl select-none"
+            className={`pointer-events-none absolute ${s.size} opacity-60 select-none`}
             style={{
               left: s.left,
               top: s.top,
-              animation: `floatUp ${7 + (i % 5)}s ease-in-out infinite alternate`,
-              animationDelay: `${i * 0.4}s`,
+              animation: `${s.anim} ${s.duration} ease-in-out infinite alternate`,
+              animationDelay: s.delay,
             }}
           >
             {s.char}
           </span>
         ))}
 
-        <div className="soft-in relative z-10 flex flex-col items-center max-w-2xl mx-auto">
-          {/* Cute Pink Pill Badge */}
-          <div className="mb-6 inline-flex items-center gap-1.5 rounded-full bg-[#fce7f0] px-4 py-1.5 text-xs font-semibold text-[#e11d63]">
-            <Sparkles size={13} /> A photobooth for long-distance love
+        <div className="soft-in relative z-10 flex flex-col items-center max-w-4xl mx-auto">
+          {/* Pink Pill Badge */}
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[#fce7f0] border border-pink-200/70 px-4 py-1.5 text-xs sm:text-sm font-semibold text-[#e11d63] shadow-sm transition-transform hover:scale-105">
+            <Sparkles size={15} /> A photobooth for long-distance love
           </div>
 
-          {/* Main Title Heading (Serif + Script Italic) */}
-          <h1 className="font-serif text-5xl sm:text-7xl font-normal text-[#2b1820] tracking-tight leading-none">
+          {/* Main Title Heading */}
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal text-[#2b1820] tracking-tight leading-tight">
             A photobooth for two,
           </h1>
-          <h2 className="font-script text-5xl sm:text-7xl text-[#ff4d79] font-normal italic mt-1">
+          <h2 className="font-script text-4xl sm:text-5xl lg:text-6xl text-[#ff4d79] font-normal italic mt-1 sm:mt-2">
             no matter the distance
           </h2>
 
           {/* Description Text */}
-          <p className="mt-6 text-base sm:text-lg text-[#5c4a52] font-normal leading-relaxed max-w-lg">
+          <p className="mt-6 text-sm sm:text-base text-[#5c4a52] font-normal leading-relaxed max-w-lg">
             Step inside the internet's cutest photobooth — built for couples who are far apart but close at heart. Take photo strips together, in real time, and keep them in a shared album.
           </p>
 

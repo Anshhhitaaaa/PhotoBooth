@@ -114,6 +114,31 @@ body {
   );
 }
 
+/* Ambient floating & bobbing emojis */
+@keyframes floatGentle {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-16px) rotate(6deg) scale(1.06);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes floatSlowBob {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(14px) rotate(-8deg) scale(0.96);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+}
+
 /* Floating hearts */
 @keyframes floatUp {
   0% {
