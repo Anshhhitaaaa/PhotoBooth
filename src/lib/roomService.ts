@@ -1,5 +1,5 @@
 import { query, genRoomCode } from './db';
-import type { Composition, Room, RoomMode, RoomMember, RoomSnap, LiveCountdownSignal, RoomSessionState } from '@/types';
+import type { Composition, Room, RoomMode, RoomMember, RoomSnap, LiveCountdownSignal, RoomSessionState, AlbumPage } from '@/types';
 
 export type { Room, RoomSnap, RoomSessionState };
 
@@ -14,11 +14,72 @@ export interface RoomPage {
   created_at: string;
 }
 
+let tablesInitialized = false;
+
+/** Ensures room DB tables exist in Neon Postgres */
+export async function ensureRoomTablesExist(): Promise<void> {
+  if (tablesInitialized) return;
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS rooms (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        code VARCHAR(10) UNIQUE NOT NULL,
+        mode VARCHAR(20) NOT NULL DEFAULT 'couple',
+        partner1_name TEXT NOT NULL DEFAULT 'Partner 1',
+        partner2_name TEXT,
+        names TEXT NOT NULL DEFAULT '',
+        members JSONB NOT NULL DEFAULT '[]'::jsonb,
+        active_session JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      ALTER TABLE rooms ADD COLUMN IF NOT EXISTS active_session JSONB DEFAULT '{}'::jsonb;
+
+      CREATE TABLE IF NOT EXISTS room_snaps (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+        session_id TEXT NOT NULL DEFAULT '',
+        sender_name TEXT NOT NULL,
+        sender_id TEXT NOT NULL DEFAULT 'p1',
+        slot_index INT NOT NULL DEFAULT 0,
+        photo_data TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS room_pages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+        title TEXT NOT NULL DEFAULT 'Untitled memory',
+        section TEXT NOT NULL DEFAULT '',
+        composition JSONB NOT NULL DEFAULT '{}'::jsonb,
+        thumb TEXT NOT NULL DEFAULT '',
+        author TEXT NOT NULL DEFAULT 'Partner 1',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    tablesInitialized = true;
+  } catch (err) {
+    console.warn('Auto room table initialization warning:', err);
+  }
+}
+
+const roomChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('lovebooth_room_sync') : null;
+
+export function broadcastRoomUpdate(room: Room) {
+  if (roomChannel) {
+    try {
+      roomChannel.postMessage({ type: 'ROOM_UPDATE', room });
+    } catch {
+      // silent
+    }
+  }
+}
+
 /** Create a new room in Neon Postgres — returns the room + identity ('p1'). */
 export async function createRoom(
   partnerName: string,
   mode: RoomMode = 'couple',
 ): Promise<{ room: Room; identity: 'p1' | 'p2' | 'p3' | 'p4' }> {
+  await ensureRoomTablesExist();
   const code = genRoomCode();
   const initialMembers: RoomMember[] = [
     { id: 'p1', name: partnerName || 'Host', joinedAt: Date.now() },
@@ -33,39 +94,34 @@ export async function createRoom(
         code,
         mode,
         partnerName || 'Partner 1',
-        partnerName || '',
+        partnerName || 'Partner 1',
         JSON.stringify(initialMembers),
       ],
     );
-    if (!rows || rows.length === 0) {
-      const fallbackRoom: Room = {
-        id: crypto.randomUUID(),
-        code,
-        mode,
-        partner1_name: partnerName || 'Partner 1',
-        partner2_name: null,
-        names: partnerName || 'Partner 1',
-        members: initialMembers,
-        active_session: null,
-        created_at: new Date().toISOString(),
-      };
-      return { room: fallbackRoom, identity: 'p1' };
+    if (rows && rows.length > 0) {
+      const room = parseRoom(rows[0]);
+      saveRoomSession(room, 'p1');
+      broadcastRoomUpdate(room);
+      return { room, identity: 'p1' };
     }
-    return { room: parseRoom(rows[0]), identity: 'p1' };
   } catch (e: any) {
-    const fallbackRoom: Room = {
-      id: crypto.randomUUID(),
-      code,
-      mode,
-      partner1_name: partnerName || 'Partner 1',
-      partner2_name: null,
-      names: partnerName || 'Partner 1',
-      members: initialMembers,
-      active_session: null,
-      created_at: new Date().toISOString(),
-    };
-    return { room: fallbackRoom, identity: 'p1' };
+    console.warn('createRoom DB fallback:', e);
   }
+
+  const fallbackRoom: Room = {
+    id: crypto.randomUUID(),
+    code,
+    mode,
+    partner1_name: partnerName || 'Partner 1',
+    partner2_name: null,
+    names: partnerName || 'Partner 1',
+    members: initialMembers,
+    active_session: null,
+    created_at: new Date().toISOString(),
+  };
+  saveRoomSession(fallbackRoom, 'p1');
+  broadcastRoomUpdate(fallbackRoom);
+  return { room: fallbackRoom, identity: 'p1' };
 }
 
 /** Join an existing room by code in Neon Postgres. */
@@ -73,52 +129,45 @@ export async function joinRoom(
   code: string,
   partnerName: string,
 ): Promise<{ room: Room; identity: 'p1' | 'p2' | 'p3' | 'p4' }> {
+  await ensureRoomTablesExist();
   const cleanCode = code.toUpperCase().trim();
-  const rows = await query<Room>(
-    `SELECT * FROM rooms WHERE UPPER(code) = UPPER($1) LIMIT 1`,
-    [cleanCode],
-  );
+  let room: Room | null = null;
 
-  if (!rows || rows.length === 0) {
-    const localSession = loadRoomSession();
-    if (localSession && localSession.room.code.toUpperCase() === cleanCode) {
-      return {
-        room: {
-          ...localSession.room,
-          partner2_name: partnerName,
-          names: `${localSession.room.partner1_name} & ${partnerName}`,
-        },
-        identity: 'p2',
-      };
+  try {
+    const rows = await query<Room>(
+      `SELECT * FROM rooms WHERE UPPER(code) = UPPER($1) LIMIT 1`,
+      [cleanCode],
+    );
+    if (rows && rows.length > 0) {
+      room = parseRoom(rows[0]);
     }
-    const fallbackRoom: Room = {
-      id: crypto.randomUUID(),
-      code: cleanCode,
-      mode: 'couple',
-      partner1_name: 'Partner 1',
-      partner2_name: partnerName,
-      names: `Partner 1 & ${partnerName}`,
-      members: [
-        { id: 'p1', name: 'Partner 1', joinedAt: Date.now() - 1000 },
-        { id: 'p2', name: partnerName, joinedAt: Date.now() },
-      ],
-      active_session: null,
-      created_at: new Date().toISOString(),
-    };
-    return { room: fallbackRoom, identity: 'p2' };
+  } catch (e) {
+    console.warn('joinRoom DB fetch warning:', e);
   }
 
-  const room = parseRoom(rows[0]);
+  // Check local session if DB fetch returned empty or failed
+  if (!room) {
+    const localSession = loadRoomSession();
+    if (localSession && localSession.room.code.toUpperCase() === cleanCode) {
+      room = localSession.room;
+    }
+  }
+
+  if (!room) {
+    throw new Error(`Room code "${cleanCode}" not found. Please verify the code generated on your partner's screen.`);
+  }
+
   const members: RoomMember[] = Array.isArray(room.members) ? room.members : [];
   const existingMember = members.find(
     (m) => m.name.toLowerCase() === partnerName.toLowerCase(),
   );
 
   if (existingMember) {
+    saveRoomSession(room, existingMember.id as any);
+    broadcastRoomUpdate(room);
     return { room, identity: existingMember.id as any };
   }
 
-  // Assign next identity slot
   const nextNum = members.length + 1;
   const newId = `p${nextNum}` as 'p1' | 'p2' | 'p3' | 'p4';
   const updatedMembers: RoomMember[] = [
@@ -126,9 +175,17 @@ export async function joinRoom(
     { id: newId, name: partnerName, joinedAt: Date.now() },
   ];
 
-  const partner1 = room.partner1_name || partnerName;
+  const partner1 = room.partner1_name || 'Partner 1';
   const partner2 = room.partner2_name || (newId === 'p2' ? partnerName : null);
   const names = updatedMembers.map((m) => m.name).join(' & ');
+
+  const updatedRoom: Room = {
+    ...room,
+    partner1_name: partner1,
+    partner2_name: partner2,
+    names: names,
+    members: updatedMembers,
+  };
 
   try {
     const updatedRows = await query<Room>(
@@ -140,13 +197,18 @@ export async function joinRoom(
     );
 
     if (updatedRows && updatedRows.length > 0) {
-      return { room: parseRoom(updatedRows[0]), identity: newId };
+      const dbRoom = parseRoom(updatedRows[0]);
+      saveRoomSession(dbRoom, newId);
+      broadcastRoomUpdate(dbRoom);
+      return { room: dbRoom, identity: newId };
     }
-  } catch {
-    // silent catch
+  } catch (e) {
+    console.warn('joinRoom DB update warning:', e);
   }
 
-  return { room, identity: newId };
+  saveRoomSession(updatedRoom, newId);
+  broadcastRoomUpdate(updatedRoom);
+  return { room: updatedRoom, identity: newId };
 }
 
 /** Start a live distance photobooth session in the room (syncs to both devices) */
@@ -351,6 +413,21 @@ export function subscribeRoomPages(
 ): () => void {
   let knownIds = new Set<string>();
 
+  // Instant broadcast listener for tab-to-tab / local window sync
+  const handleBroadcast = (event: MessageEvent) => {
+    if (event.data?.type === 'ROOM_UPDATE' && event.data?.room?.id === roomId) {
+      onChange({ eventType: 'room_update', newPage: event.data.room });
+    }
+  };
+
+  if (roomChannel) {
+    try {
+      roomChannel.addEventListener('message', handleBroadcast);
+    } catch {
+      // silent
+    }
+  }
+
   const poll = async () => {
     try {
       // Check for updated room metadata (including active_session changes)
@@ -373,9 +450,16 @@ export function subscribeRoomPages(
   };
 
   poll();
-  const intervalId = setInterval(poll, 2000);
+  const intervalId = setInterval(poll, 1500);
 
   return () => {
+    if (roomChannel) {
+      try {
+        roomChannel.removeEventListener('message', handleBroadcast);
+      } catch {
+        // silent
+      }
+    }
     clearInterval(intervalId);
   };
 }

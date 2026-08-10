@@ -272,14 +272,17 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
             >
               <ArrowLeft size={16} /> Home
             </button>
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <Heart size={18} className="fill-[#ff4d79] text-[#ff4d79]" />
               <div>
                 <h2 className="font-script text-xl font-bold text-[#2b1820]">
-                  {session.room.names || 'Our Room'}
+                  {session.room.names ||
+                    (session.room.partner2_name
+                      ? `${session.room.partner1_name} & ${session.room.partner2_name}`
+                      : session.room.partner1_name || 'Our Room')}
                 </h2>
                 <p className="flex items-center gap-1.5 text-xs text-[#8c7680]">
-                  {partnerOnline ? (
+                  {partnerOnline || !!session.room.partner2_name || (session.room.members && session.room.members.length > 1) ? (
                     <>
                       <Circle size={8} className="fill-green-400 text-green-400 animate-pulse" />
                       Both partners connected
