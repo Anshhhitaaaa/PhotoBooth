@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff1f2"/>
+      <stop offset="50%" stop-color="#ffe4e6"/>
+      <stop offset="100%" stop-color="#fecdd3"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#e11d48"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="150" cy="100" r="180" fill="#fda4af" opacity="0.25"/>
+  <circle cx="1050" cy="530" r="220" fill="#f43f5e" opacity="0.15"/>
+
+  <!-- Photobooth Strip Cards Graphic -->
+  <g transform="translate(140, 110) rotate(-6)">
+    <rect width="180" height="420" rx="16" fill="#ffffff" filter="drop-shadow(0 15px 25px rgba(225,29,72,0.15))"/>
+    <rect x="15" y="20" width="150" height="110" rx="8" fill="#fda4af" opacity="0.4"/>
+    <rect x="15" y="145" width="150" height="110" rx="8" fill="#f43f5e" opacity="0.4"/>
+    <rect x="15" y="270" width="150" height="110" rx="8" fill="#e11d48" opacity="0.4"/>
+    <text x="90" y="402" text-anchor="middle" fill="#e11d48" font-family="sans-serif" font-weight="bold" font-size="14">💕 LOVE BOOTH</text>
+  </g>
+
+  <g transform="translate(260, 90) rotate(8)">
+    <rect width="180" height="420" rx="16" fill="#ffffff" filter="drop-shadow(0 20px 30px rgba(0,0,0,0.1))"/>
+    <rect x="15" y="20" width="150" height="110" rx="8" fill="#e11d48" opacity="0.7"/>
+    <rect x="15" y="145" width="150" height="110" rx="8" fill="#fda4af" opacity="0.7"/>
+    <rect x="15" y="270" width="150" height="110" rx="8" fill="#f43f5e" opacity="0.7"/>
+    <text x="90" y="402" text-anchor="middle" fill="#e11d48" font-family="sans-serif" font-weight="bold" font-size="14">✨ BEST MEMORIES</text>
+  </g>
+
+  <!-- Title Content (Right Side) -->
+  <g transform="translate(520, 200)">
+    <!-- Brand badge -->
+    <rect x="0" y="0" width="220" height="38" rx="19" fill="#fef2f2" stroke="#f43f5e" stroke-width="2"/>
+    <text x="110" y="24" text-anchor="middle" fill="#e11d48" font-family="sans-serif" font-weight="bold" font-size="15">📸 ONLINE PHOTOBOOTH</text>
+
+    <!-- Main Title -->
+    <text x="0" y="100" fill="#be123c" font-family="sans-serif" font-weight="900" font-size="64" letter-spacing="-1">Love Booth</text>
+    <text x="0" y="155" fill="#475569" font-family="sans-serif" font-weight="600" font-size="28">Long Distance &amp; Friends Photobooth</text>
+
+    <!-- Description Subtitle -->
+    <text x="0" y="215" fill="#64748b" font-family="sans-serif" font-weight="normal" font-size="20">Take split-screen photos live together in real time,</text>
+    <text x="0" y="245" fill="#64748b" font-family="sans-serif" font-weight="normal" font-size="20">add fun stickers, filters &amp; create shared photo albums!</text>
+
+    <!-- Action Pill Button -->
+    <rect x="0" y="285" width="240" height="54" rx="27" fill="url(#cardGrad)" filter="drop-shadow(0 10px 20px rgba(225,29,72,0.3))"/>
+    <text x="120" y="320" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="20">Start Photobooth →</text>
+  </g>
+
+  <!-- Sparkles Floating -->
+  <path d="M 100 80 L 106 96 L 122 102 L 106 108 L 100 124 L 94 108 L 78 102 L 94 96 Z" fill="url(#goldGrad)"/>
+  <path d="M 1120 180 L 1124 192 L 1136 196 L 1124 200 L 1120 212 L 1116 200 L 1104 196 L 1116 192 Z" fill="url(#goldGrad)"/>
+  <path d="M 480 480 L 486 496 L 502 502 L 486 508 L 480 524 L 474 508 L 458 502 L 474 496 Z" fill="url(#goldGrad)"/>
+</svg>
