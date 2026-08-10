@@ -61,3 +61,41 @@ export interface AlbumPage {
   /** full composition for re-edit / view */
   composition: Composition;
 }
+
+export type RoomMode = 'couple' | 'friends';
+
+export interface RoomMember {
+  id: string; // e.g. 'p1', 'p2', 'p3'
+  name: string;
+  joinedAt?: number;
+}
+
+export interface Room {
+  id: string;
+  code: string;
+  mode: RoomMode;
+  partner1_name: string;
+  partner2_name: string | null;
+  names: string;
+  members: RoomMember[];
+  created_at: string;
+}
+
+export interface RoomSnap {
+  id: string;
+  room_id: string;
+  session_id: string;
+  sender_name: string;
+  sender_id: string;
+  slot_index: number;
+  photo_data: string;
+  created_at: string;
+}
+
+export interface LiveCountdownSignal {
+  type: 'START_COUNTDOWN' | 'SNAP_SHOT' | 'CANCEL_SESSION';
+  sessionId: string;
+  initiatedBy: string;
+  slotIndex?: number;
+  timestamp: number;
+}

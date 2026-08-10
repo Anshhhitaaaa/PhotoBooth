@@ -24,7 +24,7 @@ export default function App() {
   const [musicOn, setMusicOn] = useState(false);
 
   // room context for when editing within a room
-  const [roomCtx, setRoomCtx] = useState<{ room: Room; identity: 'p1' | 'p2' } | null>(null);
+  const [roomCtx, setRoomCtx] = useState<{ room: Room; identity: 'p1' | 'p2' | 'p3' | 'p4' } | null>(null);
   const [pickedLayout, setPickedLayout] = useState<LayoutId>('strip');
 
   useFloatingHearts(true);
