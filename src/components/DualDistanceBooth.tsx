@@ -125,7 +125,7 @@ export function DualDistanceBooth({
     return canvas.toDataURL('image/jpeg', 0.35);
   }, [filter, adjustments, facing]);
 
-  // Capture full resolution shot for photobooth burst
+  // Capture full resolution uncompressed HD shot for photobooth burst
   const captureHighResFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
@@ -139,7 +139,7 @@ export function DualDistanceBooth({
     }
     ctx.filter = filterById(filter).css(adjustments);
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL('image/jpeg', 0.85);
+    return canvas.toDataURL('image/png'); // Full resolution uncompressed PNG
   }, [filter, adjustments, facing]);
 
   // Lag-free live streaming: upload compressed preview frame every 1200ms
@@ -482,12 +482,39 @@ export function DualDistanceBooth({
   );
 }
 
-/** Merges Partner 1 (Left 50%) and Partner 2 (Right 50%) into a single composite frame with divider line */
+/** Draws an image onto canvas using cover crop-fill to preserve exact natural aspect ratio without squishing */
+function drawCoverImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  targetW: number,
+  targetH: number,
+) {
+  const imgRatio = img.width / img.height;
+  const targetRatio = targetW / targetH;
+  let srcX = 0;
+  let srcY = 0;
+  let srcW = img.width;
+  let srcH = img.height;
+
+  if (imgRatio > targetRatio) {
+    srcW = img.height * targetRatio;
+    srcX = (img.width - srcW) / 2;
+  } else {
+    srcH = img.width / targetRatio;
+    srcY = (img.height - srcH) / 2;
+  }
+
+  ctx.drawImage(img, srcX, srcY, srcW, srcH, x, y, targetW, targetH);
+}
+
+/** Merges Partner 1 (Left 50%) and Partner 2 (Right 50%) into an uncompressed HD composite frame */
 async function createDualSplitCanvas(leftDataUrl: string, rightDataUrl: string): Promise<string> {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 600;
+    canvas.width = 1280;
+    canvas.height = 800;
     const ctx = canvas.getContext('2d')!;
 
     const imgLeft = new Image();
@@ -497,20 +524,20 @@ async function createDualSplitCanvas(leftDataUrl: string, rightDataUrl: string):
     const checkDone = () => {
       loaded++;
       if (loaded === 2) {
-        // Draw Left partner (0..400)
-        ctx.drawImage(imgLeft, 0, 0, 400, 600);
-        // Draw Right partner (400..800)
-        ctx.drawImage(imgRight, 400, 0, 400, 600);
+        // Draw Left partner (0..640) with natural aspect ratio crop-fill
+        drawCoverImage(ctx, imgLeft, 0, 0, 640, 800);
+        // Draw Right partner (640..1280) with natural aspect ratio crop-fill
+        drawCoverImage(ctx, imgRight, 640, 0, 640, 800);
 
         // Draw vertical split divider line down middle
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.moveTo(400, 0);
-        ctx.lineTo(400, 600);
+        ctx.moveTo(640, 0);
+        ctx.lineTo(640, 800);
         ctx.stroke();
 
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        resolve(canvas.toDataURL('image/png'));
       }
     };
 
