@@ -46,7 +46,7 @@ export interface Composition {
   /** couple names for the strip header */
   names: string;
   /** paper theme for the album page */
-  paper: 'cream' | 'rose' | 'mint' | 'sky';
+  paper: 'cream' | 'rose' | 'mint' | 'sky' | 'lavender' | 'strawberry' | 'midnight' | 'coquette';
   date: string;
 }
 

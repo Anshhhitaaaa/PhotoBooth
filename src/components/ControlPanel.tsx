@@ -97,22 +97,32 @@ export function ControlPanel({ comp, onChange }: Props) {
       </Section>
 
       {/* Paper */}
-      <Section icon={Palette} title="Paper">
-        <div className="flex gap-2">
-          {(['cream', 'rose', 'mint', 'sky'] as const).map((p) => (
+      <Section icon={Palette} title="Paper & Background Theme">
+        <div className="grid grid-cols-4 gap-2">
+          {(['cream', 'rose', 'mint', 'sky', 'lavender', 'strawberry', 'midnight', 'coquette'] as const).map((p) => (
             <button
               key={p}
               onClick={() => set('paper', p)}
               className={clsx(
-                'h-10 w-10 rounded-full ring-2 transition-all',
-                comp.paper === p ? 'ring-pink-500 scale-110' : 'ring-stone-200',
-                p === 'cream' && 'bg-[#fffdf9]',
-                p === 'rose' && 'bg-[#fff1f3]',
-                p === 'mint' && 'bg-[#f0fdf4]',
-                p === 'sky' && 'bg-[#f0f9ff]',
+                'flex flex-col items-center gap-1 rounded-xl p-2 border-2 text-[10px] font-bold capitalize transition-all',
+                comp.paper === p ? 'border-pink-500 bg-pink-50 text-pink-700 scale-105 shadow-sm' : 'border-stone-200 text-stone-500 hover:border-pink-200',
               )}
-              aria-label={p}
-            />
+            >
+              <div
+                className={clsx(
+                  'h-6 w-6 rounded-full border border-stone-300 shadow-inner',
+                  p === 'cream' && 'bg-[#fffdf9]',
+                  p === 'rose' && 'bg-[#fff1f3]',
+                  p === 'mint' && 'bg-[#f0fdf4]',
+                  p === 'sky' && 'bg-[#f0f9ff]',
+                  p === 'lavender' && 'bg-[#f5f3ff]',
+                  p === 'strawberry' && 'bg-[#fff0f2]',
+                  p === 'midnight' && 'bg-[#18181b]',
+                  p === 'coquette' && 'bg-[#fff0f5]',
+                )}
+              />
+              <span>{p}</span>
+            </button>
           ))}
         </div>
       </Section>

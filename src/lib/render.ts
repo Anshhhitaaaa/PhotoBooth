@@ -283,6 +283,10 @@ export async function renderComposition(
     rose: '#fff1f3',
     mint: '#f0fdf4',
     sky: '#f0f9ff',
+    lavender: '#f5f3ff',
+    strawberry: '#fff0f2',
+    midnight: '#18181b',
+    coquette: '#fff0f5',
   };
   ctx.fillStyle = paperColors[comp.paper] ?? paperColors.cream;
   ctx.fillRect(0, 0, pw, ph);

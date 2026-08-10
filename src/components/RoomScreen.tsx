@@ -11,6 +11,7 @@ import {
   startRoomSession,
   pickRoomLayout,
   endRoomSession,
+  addRoomPage,
   type Room,
   type RoomPage,
 } from '@/lib/roomService';
@@ -21,6 +22,8 @@ import { PageViewer } from '@/components/PageViewer';
 import { ExportModal } from '@/components/ExportModal';
 import { DualDistanceBooth } from '@/components/DualDistanceBooth';
 import { LayoutPicker } from '@/components/LayoutPicker';
+import { Editor } from '@/components/Editor';
+import { renderToDataURL } from '@/lib/render';
 import {
   Heart,
   Users,
@@ -52,9 +55,10 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
   const [viewer, setViewer] = useState<AlbumPage | null>(null);
   const [exportComp, setExportComp] = useState<Composition | null>(null);
 
-  // Synchronized Room Session UI View State: 'album' | 'layout-picker' | 'camera'
-  const [activeStep, setActiveStep] = useState<'album' | 'layout-picker' | 'camera'>('album');
+  // Synchronized Room Session UI View State: 'album' | 'layout-picker' | 'camera' | 'editor'
+  const [activeStep, setActiveStep] = useState<'album' | 'layout-picker' | 'camera' | 'editor'>('album');
   const [syncedLayout, setSyncedLayout] = useState<LayoutId>('strip');
+  const [editorComp, setEditorComp] = useState<Composition | null>(null);
 
   const subRef = useRef<(() => void) | null>(null);
 
@@ -95,7 +99,9 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
               setActiveStep('camera');
             }
           } else if (!activeSession || activeSession.active === false) {
-            setActiveStep('album');
+            if (activeStep !== 'editor') {
+              setActiveStep('album');
+            }
           }
         }
         return;
@@ -127,7 +133,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
       cancelled = true;
       unsub();
     };
-  }, [session?.room.id]);
+  }, [session?.room.id, activeStep]);
 
   const handleCreate = async (name: string, mode: RoomMode) => {
     setError('');
@@ -176,6 +182,38 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
     setActiveStep('camera');
   };
 
+  // 3. When photo capture completes -> Launch Decoration Studio (<Editor />)!
+  const handleBoothComplete = (photos: string[]) => {
+    if (!session) return;
+    const partnerName =
+      session.identity === 'p1'
+        ? session.room.partner2_name || 'Partner 2'
+        : session.room.partner1_name;
+    const myName =
+      session.identity === 'p1'
+        ? session.room.partner1_name
+        : session.room.partner2_name || 'Partner';
+
+    setEditorComp({
+      layout: syncedLayout,
+      photos,
+      filter: 'none',
+      adjustments: { brightness: 1, contrast: 1, saturate: 1 },
+      border: 'polaroid',
+      stickers: [],
+      caption: `Distance Split-Screen with ${partnerName}`,
+      names: session.room.names || `${myName} & ${partnerName}`,
+      paper: 'rose',
+      date: new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    });
+
+    setActiveStep('editor');
+  };
+
   const handleClosePhotoboothFlow = async () => {
     if (!session) return;
     try {
@@ -183,6 +221,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
     } catch {
       // silent
     }
+    setEditorComp(null);
     setActiveStep('album');
   };
 
@@ -192,6 +231,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
     setSession(null);
     setPages([]);
     setPartnerOnline(false);
+    setEditorComp(null);
     setActiveStep('album');
   };
 
@@ -269,7 +309,28 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
         </div>
       </div>
 
-      {activeStep === 'layout-picker' ? (
+      {activeStep === 'editor' && editorComp ? (
+        <Editor
+          initial={editorComp}
+          initialLayout={syncedLayout}
+          onSave={async (title, section, comp) => {
+            try {
+              const thumb = await renderToDataURL(comp, 0.5);
+              const authorName =
+                session.identity === 'p1'
+                  ? session.room.partner1_name
+                  : session.room.partner2_name || 'Partner';
+              await addRoomPage(session.room.id, authorName, title, section, comp, thumb);
+              await endRoomSession(session.room.id);
+            } catch (e: any) {
+              console.warn('Save room page warning:', e);
+            }
+            setEditorComp(null);
+            setActiveStep('album');
+          }}
+          onBack={handleClosePhotoboothFlow}
+        />
+      ) : activeStep === 'layout-picker' ? (
         <div className="py-6 px-4">
           <LayoutPicker
             onPick={handlePickLayout}
@@ -285,7 +346,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
             slots={4}
             filter="warm"
             adjustments={{ brightness: 1, contrast: 1, saturate: 1 }}
-            onComplete={handleClosePhotoboothFlow}
+            onComplete={handleBoothComplete}
             onCancel={handleClosePhotoboothFlow}
           />
         </div>
