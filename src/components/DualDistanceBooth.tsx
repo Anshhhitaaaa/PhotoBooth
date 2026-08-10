@@ -84,9 +84,8 @@ export function DualDistanceBooth({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: facing,
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          frameRate: { ideal: 60, min: 30 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
         audio: false,
       });
@@ -110,24 +109,23 @@ export function DualDistanceBooth({
     };
   }, [startCamera]);
 
-  // Crisp HD preview frame for smooth, lag-free live distance view
+  // Ultra-fast, lightweight preview frame for lag-free camera feed
   const capturePreviewFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 240;
-    canvas.height = 180;
+    canvas.width = 200;
+    canvas.height = 150;
     const ctx = canvas.getContext('2d')!;
     if (facing === 'user') {
-      ctx.translate(240, 0);
+      ctx.translate(200, 0);
       ctx.scale(-1, 1);
     }
-    ctx.filter = filterById(filter).css(adjustments);
-    ctx.drawImage(video, 0, 0, 240, 180);
-    return canvas.toDataURL('image/jpeg', 0.25);
-  }, [filter, adjustments, facing]);
+    ctx.drawImage(video, 0, 0, 200, 150);
+    return canvas.toDataURL('image/jpeg', 0.2);
+  }, [facing]);
 
-  // Capture full uncompressed 1080p HD shot for photobooth burst
+  // Capture full uncompressed HD shot for photobooth burst
   const captureHighResFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
@@ -144,7 +142,7 @@ export function DualDistanceBooth({
     return canvas.toDataURL('image/jpeg', 0.90);
   }, [filter, adjustments, facing]);
 
-  // Smooth HD live preview streaming: upload frame every 1500ms
+  // Fast, lightweight live preview streaming: upload frame every 2000ms
   useEffect(() => {
     if (phase !== 'camera') return;
 
@@ -153,12 +151,12 @@ export function DualDistanceBooth({
       if (frame) {
         uploadLiveCameraFrame(room.id, sessionId, myName, identity, frame);
       }
-    }, 1500);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [phase, capturePreviewFrame, room.id, sessionId, myName, identity]);
 
-  // Fetch partner's live preview frame every 1500ms
+  // Fetch partner's live preview frame every 2000ms
   useEffect(() => {
     if (phase !== 'camera') return;
 
@@ -178,7 +176,7 @@ export function DualDistanceBooth({
       } catch {
         // silent
       }
-    }, 1500);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [phase, room.id, sessionId, identity]);
@@ -349,10 +347,10 @@ export function DualDistanceBooth({
                 playsInline
                 muted
                 className={clsx(
-                  'w-full h-full object-cover transition-all',
+                  'w-full h-full object-cover',
                   facing === 'user' && 'scale-x-[-1]',
                 )}
-                style={{ filter: cssFilter }}
+                style={cssFilter && cssFilter !== 'none' ? { filter: cssFilter } : undefined}
               />
               <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
                 <span className="h-2 w-2 rounded-full bg-green-400 animate-ping" />
