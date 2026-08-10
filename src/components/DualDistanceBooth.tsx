@@ -109,20 +109,20 @@ export function DualDistanceBooth({
     };
   }, [startCamera]);
 
-  // Ultra-fast, lightweight preview frame for lag-free camera feed
+  // Crisp 640x480 preview frame for high-quality live distance view
   const capturePreviewFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 150;
+    canvas.width = 640;
+    canvas.height = 480;
     const ctx = canvas.getContext('2d')!;
     if (facing === 'user') {
-      ctx.translate(200, 0);
+      ctx.translate(640, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(video, 0, 0, 200, 150);
-    return canvas.toDataURL('image/jpeg', 0.2);
+    ctx.drawImage(video, 0, 0, 640, 480);
+    return canvas.toDataURL('image/jpeg', 0.65);
   }, [facing]);
 
   // Capture full uncompressed HD shot for photobooth burst
@@ -142,7 +142,7 @@ export function DualDistanceBooth({
     return canvas.toDataURL('image/jpeg', 0.90);
   }, [filter, adjustments, facing]);
 
-  // Fast, lightweight live preview streaming: upload frame every 2000ms
+  // Fast 800ms live preview streaming: upload frame every 800ms
   useEffect(() => {
     if (phase !== 'camera') return;
 
@@ -151,12 +151,12 @@ export function DualDistanceBooth({
       if (frame) {
         uploadLiveCameraFrame(room.id, sessionId, myName, identity, frame);
       }
-    }, 2000);
+    }, 800);
 
     return () => clearInterval(interval);
   }, [phase, capturePreviewFrame, room.id, sessionId, myName, identity]);
 
-  // Fetch partner's live preview frame every 2000ms
+  // Fetch partner's live preview frame every 800ms
   useEffect(() => {
     if (phase !== 'camera') return;
 
@@ -176,7 +176,7 @@ export function DualDistanceBooth({
       } catch {
         // silent
       }
-    }, 2000);
+    }, 800);
 
     return () => clearInterval(interval);
   }, [phase, room.id, sessionId, identity]);
