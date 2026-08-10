@@ -65,7 +65,7 @@ export function DualDistanceBooth({
   const [myPhotos, setMyPhotos] = useState<string[]>([]);
   const [partnerLatestSnap, setPartnerLatestSnap] = useState<string | null>(null);
   const [partnerPhotos, setPartnerPhotos] = useState<string[]>([]);
-  const [mergedPhotos, setMergedPhotos] = useState<string[]>([]);
+  const [dualSplitPhotos, setDualSplitPhotos] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState('Split-Screen Live Distance Camera Connected');
 
   const myName =
@@ -108,8 +108,25 @@ export function DualDistanceBooth({
     };
   }, [startCamera]);
 
-  // Capture current frame from local camera
-  const captureFrame = useCallback((): string | null => {
+  // Capture lightweight compressed preview frame for lag-free live streaming (10KB)
+  const capturePreviewFrame = useCallback((): string | null => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d')!;
+    if (facing === 'user') {
+      ctx.translate(320, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.filter = filterById(filter).css(adjustments);
+    ctx.drawImage(video, 0, 0, 320, 240);
+    return canvas.toDataURL('image/jpeg', 0.35);
+  }, [filter, adjustments, facing]);
+
+  // Capture full resolution shot for photobooth burst
+  const captureHighResFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
     const canvas = document.createElement('canvas');
@@ -125,21 +142,21 @@ export function DualDistanceBooth({
     return canvas.toDataURL('image/jpeg', 0.85);
   }, [filter, adjustments, facing]);
 
-  // Live video frame streaming: upload local webcam frame every 900ms
+  // Lag-free live streaming: upload compressed preview frame every 1200ms
   useEffect(() => {
     if (phase !== 'camera') return;
 
-    const interval = setInterval(async () => {
-      const frame = captureFrame();
+    const interval = setInterval(() => {
+      const frame = capturePreviewFrame();
       if (frame) {
         uploadLiveCameraFrame(room.id, sessionId, myName, identity, frame);
       }
-    }, 900);
+    }, 1200);
 
     return () => clearInterval(interval);
-  }, [phase, captureFrame, room.id, sessionId, myName, identity]);
+  }, [phase, capturePreviewFrame, room.id, sessionId, myName, identity]);
 
-  // Fetch partner's live video frame every 900ms to show on right split screen
+  // Fetch partner's live preview frame every 1200ms
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -154,15 +171,15 @@ export function DualDistanceBooth({
             });
           }
         }
-      } catch (e) {
-        // silent catch
+      } catch {
+        // silent
       }
-    }, 900);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [room.id, sessionId, identity]);
 
-  // Listen for remote countdown trigger in room session
+  // Listen for remote countdown trigger
   useEffect(() => {
     if (activeSession?.step === 'counting' && phase === 'camera') {
       setStatusMessage(`${partnerName} triggered synchronized countdown!`);
@@ -184,14 +201,13 @@ export function DualDistanceBooth({
       setFlash(true);
       await wait(100);
 
-      const shot = captureFrame();
+      const shot = captureHighResFrame();
       setFlash(false);
 
       if (shot) {
         localTaken.push(shot);
         setMyPhotos([...localTaken]);
 
-        // Upload captured shot to DB
         try {
           await saveRoomSnap(room.id, sessionId, myName, identity, i, shot);
         } catch (e) {
@@ -210,9 +226,8 @@ export function DualDistanceBooth({
         timestamp: Date.now(),
       });
     }
-  }, [slots, captureFrame, room.id, sessionId, myName, identity, activeSession]);
+  }, [slots, captureHighResFrame, room.id, sessionId, myName, identity, activeSession]);
 
-  // Start synchronized dual countdown on both devices
   const handleStartDualPhotobooth = async () => {
     if (activeSession) {
       await updateRoomSessionState(room.id, {
@@ -225,22 +240,35 @@ export function DualDistanceBooth({
     runSynchronizedBurst();
   };
 
-  // Merge split photos side-by-side into alternating strip
+  // MERGE PARTNER 1 (LEFT 50%) AND PARTNER 2 (RIGHT 50%) INTO EVERY SINGLE PHOTO FRAME
   useEffect(() => {
     if (phase !== 'review') return;
 
-    const combined: string[] = [];
-    for (let i = 0; i < slots; i++) {
-      if (myPhotos[i]) combined.push(myPhotos[i]);
-      if (partnerPhotos[i]) combined.push(partnerPhotos[i]);
-    }
-    setMergedPhotos(combined.length > 0 ? combined : myPhotos);
-  }, [phase, slots, myPhotos, partnerPhotos]);
+    const buildDualFrames = async () => {
+      const mergedList: string[] = [];
+
+      for (let i = 0; i < slots; i++) {
+        const p1Shot = identity === 'p1' ? myPhotos[i] : partnerPhotos[i];
+        const p2Shot = identity === 'p1' ? partnerPhotos[i] : myPhotos[i];
+
+        if (p1Shot && p2Shot) {
+          const dualFrame = await createDualSplitCanvas(p1Shot, p2Shot);
+          mergedList.push(dualFrame);
+        } else if (myPhotos[i]) {
+          mergedList.push(myPhotos[i]);
+        }
+      }
+
+      setDualSplitPhotos(mergedList.length > 0 ? mergedList : myPhotos);
+    };
+
+    buildDualFrames();
+  }, [phase, slots, myPhotos, partnerPhotos, identity]);
 
   const cssFilter = filterById(filter).css(adjustments);
 
   const handleFinishAndSaveDB = async () => {
-    const finalPhotos = mergedPhotos.length > 0 ? mergedPhotos : myPhotos;
+    const finalPhotos = dualSplitPhotos.length > 0 ? dualSplitPhotos : myPhotos;
 
     const comp: Composition = {
       layout: layout || 'strip',
@@ -294,11 +322,11 @@ export function DualDistanceBooth({
         <span>Synchronized Split-Screen Photobooth • Room {room.code}</span>
       </div>
 
-      {/* 50/50 SPLIT SCREEN CAMERA CONTAINER */}
+      {/* 50/50 SPLIT SCREEN LIVE CAMERA */}
       <div className="relative w-full max-w-4xl">
         <div className="relative overflow-hidden rounded-3xl bg-stone-950 p-2 shadow-2xl ring-4 ring-pink-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 aspect-[16/9]">
-            {/* LEFT HALF (YOUR CAMERA FEED) */}
+            {/* LEFT HALF (MY CAMERA FEED) */}
             <div className="relative overflow-hidden rounded-2xl bg-stone-900 border border-stone-800">
               <video
                 ref={videoRef}
@@ -316,7 +344,7 @@ export function DualDistanceBooth({
               </div>
             </div>
 
-            {/* RIGHT HALF (PARTNER'S LIVE CAMERA FEED / SNAP) */}
+            {/* RIGHT HALF (PARTNER'S LIVE CAMERA FEED) */}
             <div className="relative overflow-hidden rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center">
               {partnerLatestSnap ? (
                 <img
@@ -339,7 +367,7 @@ export function DualDistanceBooth({
             </div>
           </div>
 
-          {/* COUNTDOWN OVERLAY ON CENTER OF SPLIT SCREEN */}
+          {/* COUNTDOWN OVERLAY */}
           {phase === 'counting' && count !== null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-pink-500/30 backdrop-blur-[2px]">
               <span
@@ -349,7 +377,7 @@ export function DualDistanceBooth({
                 {count}
               </span>
               <p className="mt-2 text-base font-bold text-white drop-shadow">
-                Both cameras snapping together!
+                Both cameras snapping split frames!
               </p>
             </div>
           )}
@@ -365,11 +393,11 @@ export function DualDistanceBooth({
           )}
         </div>
 
-        {/* CAPTURED SHOTS PREVIEW */}
+        {/* CAPTURED DUAL SPLIT SHOTS PREVIEW */}
         {myPhotos.length > 0 && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <p className="text-xs font-bold text-pink-600">
-              Split-Screen Shots ({myPhotos.length}/{slots})
+              Captured Dual Split Shots ({myPhotos.length}/{slots})
             </p>
             <div className="flex justify-center gap-2">
               {Array.from({ length: slots }).map((_, i) => (
@@ -425,7 +453,7 @@ export function DualDistanceBooth({
 
         {phase === 'counting' && (
           <Button size="lg" disabled>
-            <Sparkles className="animate-spin" size={18} /> Snapping Split Screen…
+            <Sparkles className="animate-spin" size={18} /> Snapping Split Frames…
           </Button>
         )}
 
@@ -441,7 +469,7 @@ export function DualDistanceBooth({
                 setMyPhotos([]);
                 setPartnerPhotos([]);
                 setPartnerLatestSnap(null);
-                setMergedPhotos([]);
+                setDualSplitPhotos([]);
                 setPhase('camera');
               }}
             >
@@ -452,6 +480,48 @@ export function DualDistanceBooth({
       </div>
     </div>
   );
+}
+
+/** Merges Partner 1 (Left 50%) and Partner 2 (Right 50%) into a single composite frame with divider line */
+async function createDualSplitCanvas(leftDataUrl: string, rightDataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d')!;
+
+    const imgLeft = new Image();
+    const imgRight = new Image();
+
+    let loaded = 0;
+    const checkDone = () => {
+      loaded++;
+      if (loaded === 2) {
+        // Draw Left partner (0..400)
+        ctx.drawImage(imgLeft, 0, 0, 400, 600);
+        // Draw Right partner (400..800)
+        ctx.drawImage(imgRight, 400, 0, 400, 600);
+
+        // Draw vertical split divider line down middle
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(400, 0);
+        ctx.lineTo(400, 600);
+        ctx.stroke();
+
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      }
+    };
+
+    imgLeft.onload = checkDone;
+    imgRight.onload = checkDone;
+    imgLeft.onerror = () => resolve(leftDataUrl);
+    imgRight.onerror = () => resolve(rightDataUrl);
+
+    imgLeft.src = leftDataUrl;
+    imgRight.src = rightDataUrl;
+  });
 }
 
 function wait(ms: number) {
