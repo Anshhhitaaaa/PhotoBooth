@@ -8,6 +8,8 @@ import {
   saveRoomSession,
   loadRoomSession,
   clearRoomSession,
+  startRoomSession,
+  endRoomSession,
   type Room,
   type RoomPage,
 } from '@/lib/roomService';
@@ -72,6 +74,13 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
           if (updated.partner2_name || (updated.members && updated.members.length > 1)) {
             setPartnerOnline(true);
           }
+
+          // Auto-launch Split-Screen Distance Booth on partner's device!
+          if (updated.active_session && updated.active_session.active) {
+            setInDualBooth(true);
+          } else if (updated.active_session === null) {
+            setInDualBooth(false);
+          }
         }
         return;
       }
@@ -126,6 +135,26 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
     }
   };
 
+  const handleOpenDualBooth = async () => {
+    if (!session) return;
+    try {
+      await startRoomSession(session.room.id, session.identity);
+    } catch (e) {
+      console.error('Failed to broadcast room session start:', e);
+    }
+    setInDualBooth(true);
+  };
+
+  const handleCloseDualBooth = async () => {
+    if (!session) return;
+    try {
+      await endRoomSession(session.room.id);
+    } catch {
+      // silent
+    }
+    setInDualBooth(false);
+  };
+
   const handleLeave = () => {
     subRef.current?.();
     clearRoomSession();
@@ -168,33 +197,36 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
             <Button variant="ghost" size="sm" onClick={onBack}>
               <ArrowLeft size={16} /> Home
             </Button>
-            <div className="hidden sm:block">
-              <h2 className="font-display text-lg text-pink-600">
-                {session.room.names || 'Our Room'}
-              </h2>
-              <p className="flex items-center gap-1.5 text-xs text-stone-400">
-                {partnerOnline ? (
-                  <>
-                    <Circle size={8} className="fill-green-400 text-green-400 animate-pulse" />
-                    Long-distance partners connected
-                  </>
-                ) : (
-                  <>
-                    <Circle size={8} className="fill-amber-400 text-amber-400" />
-                    Share code with your partner/friends to connect
-                  </>
-                )}
-              </p>
+            <div className="hidden sm:flex items-center gap-2">
+              <img src="/favicon.svg" alt="Logo" className="h-6 w-6 drop-shadow-sm" />
+              <div>
+                <h2 className="font-display text-lg text-pink-600">
+                  {session.room.names || 'Our Room'}
+                </h2>
+                <p className="flex items-center gap-1.5 text-xs text-stone-400">
+                  {partnerOnline ? (
+                    <>
+                      <Circle size={8} className="fill-green-400 text-green-400 animate-pulse" />
+                      Both partners connected
+                    </>
+                  ) : (
+                    <>
+                      <Circle size={8} className="fill-amber-400 text-amber-400" />
+                      Share code with your partner/friends to connect
+                    </>
+                  )}
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <CopyCode code={session.room.code} />
             <Button
               size="sm"
-              onClick={() => setInDualBooth(true)}
-              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
+              onClick={handleOpenDualBooth}
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-sm"
             >
-              <Zap size={14} className="fill-white" /> Live Distance Booth
+              <Zap size={14} className="fill-white" /> Live Split Photobooth
             </Button>
             <Button variant="soft" size="sm" onClick={() => onNewPhoto(session.room, session.identity)}>
               <Camera size={14} /> Add photo
@@ -214,8 +246,8 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
             slots={4}
             filter="warm"
             adjustments={{ brightness: 1, contrast: 1, saturate: 1 }}
-            onComplete={() => setInDualBooth(false)}
-            onCancel={() => setInDualBooth(false)}
+            onComplete={handleCloseDualBooth}
+            onCancel={handleCloseDualBooth}
           />
         </div>
       ) : loading ? (

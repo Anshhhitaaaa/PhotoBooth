@@ -1,7 +1,7 @@
 import { query, genRoomCode } from './db';
-import type { Composition, Room, RoomMode, RoomMember, RoomSnap, LiveCountdownSignal } from '@/types';
+import type { Composition, Room, RoomMode, RoomMember, RoomSnap, LiveCountdownSignal, RoomSessionState } from '@/types';
 
-export type { Room, RoomSnap };
+export type { Room, RoomSnap, RoomSessionState };
 
 export interface RoomPage {
   id: string;
@@ -25,8 +25,8 @@ export async function createRoom(
   ];
 
   const rows = await query<Room>(
-    `INSERT INTO rooms (code, mode, partner1_name, names, members)
-     VALUES ($1, $2, $3, $4, $5::jsonb)
+    `INSERT INTO rooms (code, mode, partner1_name, names, members, active_session)
+     VALUES ($1, $2, $3, $4, $5::jsonb, '{}'::jsonb)
      RETURNING *`,
     [
       code,
@@ -96,7 +96,42 @@ export async function joinRoom(
   return { room: parseRoom(updatedRows[0]), identity: newId };
 }
 
-/** Save a live shot taken by a partner during a long-distance session. */
+/** Start a live distance photobooth session in the room (syncs to both devices) */
+export async function startRoomSession(roomId: string, startedBy: string): Promise<RoomSessionState> {
+  const sessionId = crypto.randomUUID();
+  const state: RoomSessionState = {
+    active: true,
+    sessionId,
+    startedBy,
+    step: 'idle',
+    timestamp: Date.now(),
+  };
+
+  await query(
+    `UPDATE rooms SET active_session = $1::jsonb WHERE id = $2`,
+    [JSON.stringify(state), roomId],
+  );
+
+  return state;
+}
+
+/** Update the live room session step (e.g. counting down) */
+export async function updateRoomSessionState(roomId: string, state: RoomSessionState): Promise<void> {
+  await query(
+    `UPDATE rooms SET active_session = $1::jsonb WHERE id = $2`,
+    [JSON.stringify(state), roomId],
+  );
+}
+
+/** Close/exit the active photobooth session for the room */
+export async function endRoomSession(roomId: string): Promise<void> {
+  await query(
+    `UPDATE rooms SET active_session = NULL WHERE id = $1`,
+    [roomId],
+  );
+}
+
+/** Save a live split-screen shot taken by a partner during a distance session. */
 export async function saveRoomSnap(
   roomId: string,
   sessionId: string,
@@ -116,6 +151,22 @@ export async function saveRoomSnap(
     throw new Error('Failed to save snap to Neon database.');
   }
   return rows[0];
+}
+
+/** Fetch latest frame uploaded by partner for live split screen display */
+export async function loadLatestPartnerSnap(
+  roomId: string,
+  sessionId: string,
+  myId: string,
+): Promise<RoomSnap | null> {
+  const rows = await query<RoomSnap>(
+    `SELECT * FROM room_snaps
+     WHERE room_id = $1 AND session_id = $2 AND sender_id != $3
+     ORDER BY created_at DESC LIMIT 1`,
+    [roomId, sessionId, myId],
+  );
+
+  return rows && rows.length > 0 ? rows[0] : null;
 }
 
 /** Load all snaps for a specific live session in a room. */
@@ -182,7 +233,7 @@ export async function deleteRoomPage(pageId: string): Promise<void> {
   await query(`DELETE FROM room_pages WHERE id = $1`, [pageId]);
 }
 
-/** Polls room metadata and shared pages for live updates every 2.5 seconds */
+/** Polls room metadata and shared pages for live updates every 1.5 seconds */
 export function subscribeRoomPages(
   roomId: string,
   onChange: (payload: { eventType: string; newPage?: RoomPage; oldPage?: RoomPage; newSnap?: RoomSnap }) => void,
@@ -191,13 +242,13 @@ export function subscribeRoomPages(
 
   const poll = async () => {
     try {
-      // Check for updated room metadata
-      const roomRows = await query<Room>(`SELECT * FROM rooms WHERE id = $1 LIMIT 1`, [roomId]);
+      // Check for updated room metadata (including active_session changes)
+      const roomRows = await query<any>(`SELECT * FROM rooms WHERE id = $1 LIMIT 1`, [roomId]);
       if (roomRows && roomRows.length > 0) {
         onChange({ eventType: 'room_update', newPage: parseRoom(roomRows[0]) as any });
       }
 
-      // Check for new pages
+      // Check for new album pages
       const pages = await loadRoomPages(roomId);
       for (const page of pages) {
         if (!knownIds.has(page.id)) {
@@ -211,7 +262,7 @@ export function subscribeRoomPages(
   };
 
   poll();
-  const intervalId = setInterval(poll, 2500);
+  const intervalId = setInterval(poll, 1500);
 
   return () => {
     clearInterval(intervalId);
@@ -247,7 +298,7 @@ export function createLiveSignalChannel(
     }
   };
 
-  const intervalId = setInterval(pollSignal, 2000);
+  const intervalId = setInterval(pollSignal, 1500);
 
   return {
     broadcastSignal: (_payload: LiveCountdownSignal) => {
@@ -263,6 +314,7 @@ function parseRoom(r: any): Room {
   return {
     ...r,
     members: typeof r.members === 'string' ? JSON.parse(r.members) : r.members || [],
+    active_session: typeof r.active_session === 'string' ? JSON.parse(r.active_session) : r.active_session || null,
   };
 }
 

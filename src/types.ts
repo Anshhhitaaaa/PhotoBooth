@@ -70,6 +70,16 @@ export interface RoomMember {
   joinedAt?: number;
 }
 
+export interface RoomSessionState {
+  active: boolean;
+  sessionId: string;
+  startedBy: string;
+  step: 'idle' | 'counting' | 'review';
+  count?: number | null;
+  slotIndex?: number;
+  timestamp: number;
+}
+
 export interface Room {
   id: string;
   code: string;
@@ -78,6 +88,7 @@ export interface Room {
   partner2_name: string | null;
   names: string;
   members: RoomMember[];
+  active_session?: RoomSessionState | null;
   created_at: string;
 }
 

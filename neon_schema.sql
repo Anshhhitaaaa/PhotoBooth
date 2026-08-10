@@ -1,6 +1,6 @@
 -- Neon Postgres Database Schema for Photobooth (Couple & Friends)
 
--- 1. Create rooms table
+-- 1. Create rooms table with active session sync support
 CREATE TABLE IF NOT EXISTS rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(10) UNIQUE NOT NULL,
@@ -9,10 +9,14 @@ CREATE TABLE IF NOT EXISTS rooms (
   partner2_name TEXT,
   names TEXT NOT NULL DEFAULT '',
   members JSONB NOT NULL DEFAULT '[]'::jsonb,
+  active_session JSONB DEFAULT '{}'::jsonb, -- active room photobooth session state
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Create room_snaps table for live distance captures
+-- Ensure active_session column exists if table was already created
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS active_session JSONB DEFAULT '{}'::jsonb;
+
+-- 2. Create room_snaps table for live distance split screen captures
 CREATE TABLE IF NOT EXISTS room_snaps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,

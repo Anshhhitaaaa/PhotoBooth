@@ -96,7 +96,7 @@ export function Home({ pages, onNew, onOpenAlbum, onOpenRoom, musicOn, onToggleM
       <nav className="fixed top-0 left-0 right-0 z-40 border-b border-pink-100/50 bg-cream-100/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">💕</span>
+            <img src="/favicon.svg" alt="Love Booth" className="h-8 w-8 drop-shadow-sm transition-transform hover:scale-110" />
             <span className="font-display text-xl text-pink-600">Love Booth</span>
           </div>
           <div className="hidden items-center gap-1 sm:flex">
