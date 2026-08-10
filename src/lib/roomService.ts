@@ -24,24 +24,44 @@ export async function createRoom(
     { id: 'p1', name: partnerName || 'Host', joinedAt: Date.now() },
   ];
 
-  const rows = await query<Room>(
-    `INSERT INTO rooms (code, mode, partner1_name, names, members, active_session)
-     VALUES ($1, $2, $3, $4, $5::jsonb, '{}'::jsonb)
-     RETURNING *`,
-    [
-      code,
-      mode,
-      partnerName || 'Partner 1',
-      partnerName || '',
-      JSON.stringify(initialMembers),
-    ],
-  );
-
-  if (!rows || rows.length === 0) {
-    throw new Error('Failed to create room in Neon Postgres database.');
+  try {
+    const rows = await query<Room>(
+      `INSERT INTO rooms (code, mode, partner1_name, names, members, active_session)
+       VALUES ($1, $2, $3, $4, $5::jsonb, '{}'::jsonb)
+       RETURNING *`,
+      [
+        code,
+        mode,
+        partnerName || 'Partner 1',
+        partnerName || '',
+        JSON.stringify(initialMembers),
+      ],
+    );
+    if (!rows || rows.length === 0) {
+      throw new Error('Failed to create room in Neon Postgres database.');
+    }
+    return { room: parseRoom(rows[0]), identity: 'p1' };
+  } catch (e: any) {
+    if (e?.message?.includes('active_session')) {
+      const rows = await query<Room>(
+        `INSERT INTO rooms (code, mode, partner1_name, names, members)
+         VALUES ($1, $2, $3, $4, $5::jsonb)
+         RETURNING *`,
+        [
+          code,
+          mode,
+          partnerName || 'Partner 1',
+          partnerName || '',
+          JSON.stringify(initialMembers),
+        ],
+      );
+      if (!rows || rows.length === 0) {
+        throw new Error('Failed to create room in Neon Postgres database.');
+      }
+      return { room: parseRoom(rows[0]), identity: 'p1' };
+    }
+    throw e;
   }
-
-  return { room: parseRoom(rows[0]), identity: 'p1' };
 }
 
 /** Join an existing room by code in Neon Postgres. */
@@ -107,28 +127,40 @@ export async function startRoomSession(roomId: string, startedBy: string): Promi
     timestamp: Date.now(),
   };
 
-  await query(
-    `UPDATE rooms SET active_session = $1::jsonb WHERE id = $2`,
-    [JSON.stringify(state), roomId],
-  );
+  try {
+    await query(
+      `UPDATE rooms SET active_session = $1::jsonb WHERE id = $2`,
+      [JSON.stringify(state), roomId],
+    );
+  } catch (e) {
+    console.warn('active_session update warning:', e);
+  }
 
   return state;
 }
 
 /** Update the live room session step (e.g. counting down) */
 export async function updateRoomSessionState(roomId: string, state: RoomSessionState): Promise<void> {
-  await query(
-    `UPDATE rooms SET active_session = $1::jsonb WHERE id = $2`,
-    [JSON.stringify(state), roomId],
-  );
+  try {
+    await query(
+      `UPDATE rooms SET active_session = $1::jsonb WHERE id = $2`,
+      [JSON.stringify(state), roomId],
+    );
+  } catch (e) {
+    console.warn('active_session state update warning:', e);
+  }
 }
 
 /** Close/exit the active photobooth session for the room */
 export async function endRoomSession(roomId: string): Promise<void> {
-  await query(
-    `UPDATE rooms SET active_session = NULL WHERE id = $1`,
-    [roomId],
-  );
+  try {
+    await query(
+      `UPDATE rooms SET active_session = NULL WHERE id = $1`,
+      [roomId],
+    );
+  } catch (e) {
+    console.warn('endRoomSession warning:', e);
+  }
 }
 
 /** Save a live split-screen shot taken by a partner during a distance session. */
