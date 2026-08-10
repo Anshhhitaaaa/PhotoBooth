@@ -6,12 +6,11 @@ import {
   Check,
   X,
   SwitchCamera,
-  Users,
   Zap,
   Heart,
   Globe,
 } from 'lucide-react';
-import type { FilterId, Adjustments, LayoutId, Composition } from '@/types';
+import type { FilterId, Adjustments, Composition } from '@/types';
 import { filterById } from '@/lib/filters';
 import { Button } from '@/components/ui/Button';
 import { clsx } from '@/lib/utils';

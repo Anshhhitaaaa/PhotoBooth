@@ -1,5 +1,5 @@
 import { query, genRoomCode } from './db';
-import type { Composition, Room, RoomMode, RoomMember, RoomSnap } from '@/types';
+import type { Composition, Room, RoomMode, RoomMember, RoomSnap, LiveCountdownSignal } from '@/types';
 
 export type { Room, RoomSnap };
 
@@ -221,7 +221,7 @@ export function subscribeRoomPages(
 /** Broadcast signal helper for synchronized countdown */
 export function createLiveSignalChannel(
   roomId: string,
-  onSignal: (signal: { type: string; sessionId: string; initiatedBy: string; slotIndex?: number }) => void,
+  onSignal: (signal: LiveCountdownSignal) => void,
 ) {
   let lastSession = '';
   const pollSignal = async () => {
@@ -238,6 +238,7 @@ export function createLiveSignalChannel(
             type: 'START_COUNTDOWN',
             sessionId: snap.session_id,
             initiatedBy: snap.sender_id,
+            timestamp: Date.now(),
           });
         }
       }
@@ -249,7 +250,7 @@ export function createLiveSignalChannel(
   const intervalId = setInterval(pollSignal, 2000);
 
   return {
-    broadcastSignal: (_payload: { type: string; sessionId: string; initiatedBy: string; slotIndex?: number }) => {
+    broadcastSignal: (_payload: LiveCountdownSignal) => {
       // Broadcast signal stored in memory/DB
     },
     unsubscribe: () => {
