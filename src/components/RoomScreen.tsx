@@ -261,20 +261,24 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
   const albumPages = pages.map(roomPageToAlbumPage);
 
   return (
-    <div className="min-h-screen bg-romance">
-      <div className="sticky top-0 z-30 border-b border-pink-100 bg-cream-100/85 px-4 py-3 backdrop-blur">
+    <div className="min-h-screen bg-[#fdfbf7] text-[#5c4a52]">
+      {/* Top Navbar */}
+      <div className="sticky top-0 z-30 border-b border-pink-100/60 bg-[#fdfbf7]/85 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={onBack}>
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1 text-sm font-semibold text-[#5c4a52] hover:text-[#ff4d79] transition-colors"
+            >
               <ArrowLeft size={16} /> Home
-            </Button>
+            </button>
             <div className="hidden sm:flex items-center gap-2">
-              <img src="/favicon.svg" alt="Logo" className="h-6 w-6 drop-shadow-sm" />
+              <Heart size={18} className="fill-[#ff4d79] text-[#ff4d79]" />
               <div>
-                <h2 className="font-display text-lg text-pink-600">
+                <h2 className="font-script text-xl font-bold text-[#2b1820]">
                   {session.room.names || 'Our Room'}
                 </h2>
-                <p className="flex items-center gap-1.5 text-xs text-stone-400">
+                <p className="flex items-center gap-1.5 text-xs text-[#8c7680]">
                   {partnerOnline ? (
                     <>
                       <Circle size={8} className="fill-green-400 text-green-400 animate-pulse" />
@@ -283,7 +287,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
                   ) : (
                     <>
                       <Circle size={8} className="fill-amber-400 text-amber-400" />
-                      Share code with your partner/friends to connect
+                      Share code with your partner to connect
                     </>
                   )}
                 </p>
@@ -292,19 +296,21 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <CopyCode code={session.room.code} />
-            <Button
-              size="sm"
+            <button
               onClick={handleStartPhotoboothFlow}
-              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-sm"
+              className="flex items-center gap-1.5 rounded-full bg-[#ff4d79] hover:bg-[#e03d67] text-white text-xs font-bold px-4 py-2 shadow-md shadow-pink-200 transition-all hover:scale-105"
             >
               <Zap size={14} className="fill-white" /> Start Photobooth Together
-            </Button>
-            <Button variant="soft" size="sm" onClick={() => onNewPhoto(session.room, session.identity)}>
+            </button>
+            <button
+              onClick={() => onNewPhoto(session.room, session.identity)}
+              className="flex items-center gap-1.5 rounded-full border border-pink-200 bg-white text-[#ff4d79] hover:bg-pink-50 text-xs font-bold px-3.5 py-2 transition-all"
+            >
               <Camera size={14} /> Add photo
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLeave}>
+            </button>
+            <button onClick={handleLeave} className="text-xs font-semibold text-[#8c7680] hover:text-[#ff4d79] px-2">
               Leave
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -315,7 +321,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
           initialLayout={syncedLayout}
           onSave={async (title, section, comp) => {
             try {
-              const thumb = await renderToDataURL(comp, 0.5);
+              const thumb = await renderToDataURL(comp, 0.4);
               const authorName =
                 session.identity === 'p1'
                   ? session.room.partner1_name
@@ -333,6 +339,7 @@ export function RoomScreen({ onNewPhoto, onBack }: Props) {
       ) : activeStep === 'layout-picker' ? (
         <div className="py-6 px-4">
           <LayoutPicker
+            isRoom={true}
             onPick={handlePickLayout}
             onBack={handleClosePhotoboothFlow}
           />
@@ -396,50 +403,57 @@ function RoomLobby({
   const [busy, setBusy] = useState(false);
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-romance px-4 py-8">
-      <button onClick={onBack} className="absolute left-4 top-4 text-stone-400 hover:text-pink-500">
-        <ArrowLeft size={20} />
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#fdfbf7] px-4 py-8 text-[#5c4a52]">
+      <button onClick={onBack} className="absolute left-6 top-6 text-[#8c7680] hover:text-[#ff4d79] transition-colors">
+        <ArrowLeft size={22} />
       </button>
 
-      <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-pink-100">
-          <Users className="text-pink-500" size={30} />
+      <div className="mb-6 text-center max-w-sm">
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[#ffeef4] text-[#ff4d79]">
+          <Heart size={30} className="fill-[#ff4d79]" />
         </div>
-        <h1 className="font-display text-3xl text-pink-600">Long Distance & Friends Room</h1>
-        <p className="mt-1 max-w-sm text-stone-500">
-          Create a private room for you & your partner or friends. Take synchronized photos together live across any distance!
+        <h1 className="font-serif text-3xl font-bold text-[#2b1820]">Long Distance Room</h1>
+        <p className="font-script text-xl text-[#ff4d79] mt-1">A private photobooth for two</p>
+        <p className="mt-2 text-xs leading-relaxed text-[#7c6670]">
+          Create a room, share the code with your partner, and take synchronized split-screen photos together live!
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600 ring-1 ring-red-200">
+        <div className="mb-4 rounded-xl bg-red-50 px-4 py-2 text-xs text-red-600 ring-1 ring-red-200">
           {error}
         </div>
       )}
 
       {mode === 'choose' && (
         <div className="flex w-full max-w-sm flex-col gap-3">
-          <Button size="lg" onClick={() => setMode('create')}>
+          <button
+            onClick={() => setMode('create')}
+            className="flex items-center justify-center gap-2 rounded-full bg-[#ff4d79] hover:bg-[#e03d67] text-white font-bold py-3.5 shadow-lg shadow-pink-200 transition-all hover:scale-105"
+          >
             <Heart size={18} /> Create a new room
-          </Button>
-          <Button size="lg" variant="soft" onClick={() => setMode('join')}>
-            <LogIn size={18} /> Join existing room code
-          </Button>
+          </button>
+          <button
+            onClick={() => setMode('join')}
+            className="flex items-center justify-center gap-2 rounded-full border-2 border-[#ff4d79] bg-white hover:bg-pink-50 text-[#ff4d79] font-bold py-3.5 transition-all hover:scale-105"
+          >
+            <LogIn size={18} /> Join with room code
+          </button>
         </div>
       )}
 
       {mode === 'create' && (
-        <div className="w-full max-w-sm space-y-4 bg-white/80 p-6 rounded-2xl shadow-sm border border-pink-100 backdrop-blur">
+        <div className="w-full max-w-sm space-y-4 bg-white p-6 rounded-3xl shadow-lg ring-1 ring-pink-100">
           <div>
-            <label className="mb-1 block text-xs font-bold text-pink-600">Room Type</label>
+            <label className="mb-1 block text-xs font-bold text-[#ff4d79]">Room Type</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setRoomType('couple')}
                 className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border-2 text-xs font-bold transition-all ${
                   roomType === 'couple'
-                    ? 'border-pink-500 bg-pink-50 text-pink-600'
-                    : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                    ? 'border-[#ff4d79] bg-[#ffeef4] text-[#ff4d79]'
+                    : 'border-stone-200 text-[#7c6670] hover:border-stone-300'
                 }`}
               >
                 <Heart size={14} /> Couple Room
@@ -449,8 +463,8 @@ function RoomLobby({
                 onClick={() => setRoomType('friends')}
                 className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border-2 text-xs font-bold transition-all ${
                   roomType === 'friends'
-                    ? 'border-pink-500 bg-pink-50 text-pink-600'
-                    : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                    ? 'border-[#ff4d79] bg-[#ffeef4] text-[#ff4d79]'
+                    : 'border-stone-200 text-[#7c6670] hover:border-stone-300'
                 }`}
               >
                 <UserPlus size={14} /> Friends Group
@@ -459,69 +473,67 @@ function RoomLobby({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold text-pink-600">Your Name</label>
+            <label className="mb-1 block text-xs font-bold text-[#ff4d79]">Your Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Alex"
-              className="w-full rounded-xl border-2 border-stone-200 px-3 py-2.5 text-sm focus:border-pink-400 focus:outline-none"
+              className="w-full rounded-xl border-2 border-pink-100 px-3 py-2.5 text-sm text-[#2b1820] focus:border-[#ff4d79] focus:outline-none"
             />
           </div>
 
-          <Button
-            size="lg"
-            className="w-full"
+          <button
             disabled={busy || !name.trim()}
             onClick={() => {
               setBusy(true);
               onCreate(name, roomType).finally(() => setBusy(false));
             }}
+            className="w-full rounded-full bg-[#ff4d79] hover:bg-[#e03d67] text-white font-bold py-3 shadow-md shadow-pink-200 transition-all disabled:opacity-50"
           >
             {busy ? 'Creating…' : 'Create Room & Generate Code'}
-          </Button>
+          </button>
 
-          <button onClick={() => setMode('choose')} className="w-full text-xs text-stone-400 hover:text-pink-500">
+          <button onClick={() => setMode('choose')} className="w-full text-xs text-[#8c7680] hover:text-[#ff4d79] transition-colors">
             Back
           </button>
         </div>
       )}
 
       {mode === 'join' && (
-        <div className="w-full max-w-sm space-y-4 bg-white/80 p-6 rounded-2xl shadow-sm border border-pink-100 backdrop-blur">
+        <div className="w-full max-w-sm space-y-4 bg-white p-6 rounded-3xl shadow-lg ring-1 ring-pink-100">
           <div>
-            <label className="mb-1 block text-xs font-bold text-pink-600">Enter Room Code</label>
+            <label className="mb-1 block text-xs font-bold text-[#ff4d79]">Enter Room Code</label>
             <input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="6-letter code"
+              placeholder="6-LETTER CODE"
               maxLength={6}
-              className="w-full rounded-xl border-2 border-stone-200 px-3 py-2.5 text-center text-lg font-bold tracking-widest focus:border-pink-400 focus:outline-none"
+              className="w-full rounded-xl border-2 border-pink-100 px-3 py-2.5 text-center text-lg font-bold tracking-widest text-[#2b1820] focus:border-[#ff4d79] focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold text-pink-600">Your Name</label>
+            <label className="mb-1 block text-xs font-bold text-[#ff4d79]">Your Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Sam"
-              className="w-full rounded-xl border-2 border-stone-200 px-3 py-2.5 text-sm focus:border-pink-400 focus:outline-none"
+              className="w-full rounded-xl border-2 border-pink-100 px-3 py-2.5 text-sm text-[#2b1820] focus:border-[#ff4d79] focus:outline-none"
             />
           </div>
 
-          <Button
-            size="lg"
-            className="w-full"
+          <button
             disabled={busy || !code.trim() || !name.trim()}
             onClick={() => {
               setBusy(true);
               onJoin(code, name).finally(() => setBusy(false));
             }}
+            className="w-full rounded-full bg-[#ff4d79] hover:bg-[#e03d67] text-white font-bold py-3 shadow-md shadow-pink-200 transition-all disabled:opacity-50"
           >
             {busy ? 'Joining…' : 'Join Room'}
-          </Button>
+          </button>
 
-          <button onClick={() => setMode('choose')} className="w-full text-xs text-stone-400 hover:text-pink-500">
+          <button onClick={() => setMode('choose')} className="w-full text-xs text-[#8c7680] hover:text-[#ff4d79] transition-colors">
             Back
           </button>
         </div>
@@ -540,7 +552,7 @@ function CopyCode({ code }: { code: string }) {
   return (
     <button
       onClick={copy}
-      className="flex items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1.5 text-xs font-bold text-pink-600 transition-all hover:bg-pink-200"
+      className="flex items-center gap-1.5 rounded-full bg-[#ffeef4] px-3.5 py-1.5 text-xs font-bold text-[#ff4d79] transition-all hover:bg-pink-100"
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
       {code}

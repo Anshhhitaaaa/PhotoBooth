@@ -52,30 +52,33 @@ body,
 
 body {
   margin: 0;
-  font-family: 'Quicksand', system-ui, sans-serif;
-  color: var(--stone-700);
-  background: var(--cream-100);
+  font-family: 'Outfit', system-ui, sans-serif;
+  color: #5c4a52;
+  background: #fdfbf7;
   -webkit-font-smoothing: antialiased;
 }
 
 .font-script {
   font-family: 'Caveat', cursive;
 }
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
 .font-display {
-  font-family: 'Pacifico', cursive;
+  font-family: 'Caveat', cursive;
 }
 .font-sans {
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 /* Soft romantic page background */
 .bg-romance {
-  background-color: var(--cream-100);
+  background-color: #fdfbf7;
   background-image:
-    radial-gradient(at 12% 18%, rgba(255, 167, 188, 0.35) 0px, transparent 55%),
-    radial-gradient(at 88% 12%, rgba(252, 211, 77, 0.22) 0px, transparent 50%),
-    radial-gradient(at 78% 88%, rgba(255, 122, 161, 0.28) 0px, transparent 55%),
-    radial-gradient(at 20% 82%, rgba(255, 199, 212, 0.30) 0px, transparent 50%);
+    radial-gradient(at 12% 18%, rgba(255, 238, 244, 0.6) 0px, transparent 55%),
+    radial-gradient(at 88% 12%, rgba(254, 243, 199, 0.3) 0px, transparent 50%),
+    radial-gradient(at 78% 88%, rgba(252, 231, 240, 0.5) 0px, transparent 55%),
+    radial-gradient(at 20% 82%, rgba(255, 224, 235, 0.4) 0px, transparent 50%);
 }
 
 /* Paper texture for album pages */

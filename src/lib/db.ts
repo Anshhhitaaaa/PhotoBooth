@@ -32,8 +32,13 @@ export async function query<T = any>(
     const result = await sql(queryString, params);
     return (result as T[]) || [];
   } catch (error: any) {
-    console.error('Neon Query Error:', error?.message || error);
-    throw error;
+    const errMsg = String(error?.message || error || '');
+    if (errMsg.includes('402') || errMsg.includes('quota') || errMsg.includes('Data Transfer')) {
+      console.warn('Neon Postgres data transfer quota reached. Operating in seamless local cache mode.');
+      return [];
+    }
+    console.error('Neon Query Error:', errMsg);
+    throw new Error(errMsg);
   }
 }
 

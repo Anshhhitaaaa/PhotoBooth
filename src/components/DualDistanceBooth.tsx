@@ -78,14 +78,19 @@ export function DualDistanceBooth({
       ? room.partner2_name || 'Partner 2'
       : room.partner1_name;
 
-  // Initialize Local Webcam
+  // Initialize Local Webcam with crisp HD 1080p @ 60 FPS
   const startCamera = useCallback(async () => {
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+          facingMode: facing,
+          width: { ideal: 1920, min: 1280 },
+          height: { ideal: 1080, min: 720 },
+          frameRate: { ideal: 60, min: 30 },
+        },
         audio: false,
       });
       streamRef.current = stream;
@@ -108,24 +113,24 @@ export function DualDistanceBooth({
     };
   }, [startCamera]);
 
-  // Ultra-lightweight micro preview frame for 60 FPS smooth video performance (1.5KB)
+  // Crisp HD preview frame for smooth, lag-free live distance view
   const capturePreviewFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 160;
-    canvas.height = 120;
+    canvas.width = 360;
+    canvas.height = 270;
     const ctx = canvas.getContext('2d')!;
     if (facing === 'user') {
-      ctx.translate(160, 0);
+      ctx.translate(360, 0);
       ctx.scale(-1, 1);
     }
     ctx.filter = filterById(filter).css(adjustments);
-    ctx.drawImage(video, 0, 0, 160, 120);
-    return canvas.toDataURL('image/jpeg', 0.2);
+    ctx.drawImage(video, 0, 0, 360, 270);
+    return canvas.toDataURL('image/jpeg', 0.45);
   }, [filter, adjustments, facing]);
 
-  // Capture full resolution optimized HD shot for photobooth burst
+  // Capture full uncompressed 1080p HD shot for photobooth burst
   const captureHighResFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return null;
@@ -139,10 +144,10 @@ export function DualDistanceBooth({
     }
     ctx.filter = filterById(filter).css(adjustments);
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL('image/jpeg', 0.85);
+    return canvas.toDataURL('image/jpeg', 0.90);
   }, [filter, adjustments, facing]);
 
-  // Smooth low-bandwidth live streaming: upload micro preview frame every 2000ms
+  // Smooth HD live preview streaming: upload frame every 1500ms
   useEffect(() => {
     if (phase !== 'camera') return;
 
@@ -151,12 +156,12 @@ export function DualDistanceBooth({
       if (frame) {
         uploadLiveCameraFrame(room.id, sessionId, myName, identity, frame);
       }
-    }, 2000);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, [phase, capturePreviewFrame, room.id, sessionId, myName, identity]);
 
-  // Fetch partner's live preview frame every 2000ms
+  // Fetch partner's live preview frame every 1500ms
   useEffect(() => {
     if (phase !== 'camera') return;
 
@@ -176,7 +181,7 @@ export function DualDistanceBooth({
       } catch {
         // silent
       }
-    }, 2000);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, [phase, room.id, sessionId, identity]);
@@ -285,8 +290,8 @@ export function DualDistanceBooth({
   return (
     <div className="flex flex-col items-center gap-5">
       {/* Header Banner */}
-      <div className="flex items-center gap-2 rounded-full bg-pink-100/90 px-4 py-1.5 text-xs font-bold text-pink-700 shadow-sm backdrop-blur">
-        <Globe size={15} className="animate-pulse text-pink-500" />
+      <div className="flex items-center gap-2 rounded-full bg-[#ffeef4] px-4 py-1.5 text-xs font-bold text-[#ff4d79] shadow-sm">
+        <Globe size={15} className="animate-pulse text-[#ff4d79]" />
         <span>Synchronized Split-Screen Photobooth • Room {room.code}</span>
       </div>
 
@@ -398,37 +403,38 @@ export function DualDistanceBooth({
       <div className="flex flex-wrap items-center justify-center gap-3">
         {phase === 'camera' && (
           <>
-            <Button
-              size="lg"
+            <button
               onClick={handleStartDualPhotobooth}
               disabled={!!error}
-              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg"
+              className="flex items-center gap-2 rounded-full bg-[#ff4d79] hover:bg-[#e03d67] text-white font-bold text-base px-8 py-3.5 shadow-lg shadow-pink-200 transition-all hover:scale-105"
             >
               <Zap size={18} className="fill-white" /> Start Capturing Together ({slots} shots)
-            </Button>
-            <Button
-              variant="ghost"
-              size="lg"
+            </button>
+            <button
               onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))}
+              className="flex items-center gap-2 rounded-full border-2 border-[#ff4d79] bg-white text-[#ff4d79] hover:bg-pink-50 font-bold text-sm px-5 py-3 transition-all"
             >
               <SwitchCamera size={18} /> Flip Camera
-            </Button>
-            <Button variant="ghost" size="lg" onClick={handleCloseSession}>
+            </button>
+            <button
+              onClick={handleCloseSession}
+              className="flex items-center gap-1.5 rounded-full text-xs font-semibold text-[#8c7680] hover:text-[#ff4d79] px-4 py-3 transition-colors"
+            >
               <X size={18} /> Exit Booth
-            </Button>
+            </button>
           </>
         )}
 
         {phase === 'counting' && (
-          <Button size="lg" disabled>
+          <button disabled className="flex items-center gap-2 rounded-full bg-[#ff4d79]/80 text-white font-bold text-base px-8 py-3.5 shadow-lg">
             <Sparkles className="animate-spin" size={18} /> Snapping Split Frames…
-          </Button>
+          </button>
         )}
 
         {phase === 'review' && (
-          <Button size="lg" disabled>
+          <button disabled className="flex items-center gap-2 rounded-full bg-[#ff4d79]/80 text-white font-bold text-base px-8 py-3.5 shadow-lg">
             <Sparkles className="animate-spin" size={18} /> Loading Decoration Studio…
-          </Button>
+          </button>
         )}
       </div>
     </div>

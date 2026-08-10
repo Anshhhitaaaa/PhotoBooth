@@ -10,7 +10,7 @@ import { PageViewer } from '@/components/PageViewer';
 import { ExportModal } from '@/components/ExportModal';
 import { RoomScreen } from '@/components/RoomScreen';
 import { LayoutPicker } from '@/components/LayoutPicker';
-import { addRoomPage, type Room } from '@/lib/roomService';
+import { addRoomPage, loadSoloPages, addSoloPage, deleteSoloPage, type Room } from '@/lib/roomService';
 import { renderToDataURL } from '@/lib/render';
 
 type View = 'home' | 'layout-picker' | 'editor' | 'album' | 'room' | 'room-editor';
@@ -31,6 +31,15 @@ export default function App() {
   useClickSparkles(true);
   useYouTubeMusic(musicOn);
 
+  // Load saved solo photos directly from Neon Postgres DB on launch
+  useEffect(() => {
+    loadSoloPages().then((dbPages) => {
+      if (dbPages && dbPages.length > 0) {
+        setPages(dbPages);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('lovebooth:names', names);
   }, [names]);
@@ -39,36 +48,47 @@ export default function App() {
     saveAlbum(pages);
   }, [pages]);
 
+  // Save completed Solo Photobooth strip into Neon Postgres Database
   const handleSave = async (title: string, section: string, comp: Composition) => {
-    const thumb = await renderToDataURL(comp, 0.5);
-    const page: AlbumPage = {
-      id: crypto.randomUUID(),
-      title,
-      section,
-      createdAt: Date.now(),
-      paper: comp.paper,
-      thumb,
-      composition: { ...comp, names: names || comp.names },
-    };
-    setPages((prev) => [page, ...prev]);
+    const thumb = await renderToDataURL(comp, 0.4);
+    try {
+      const newDbPage = await addSoloPage(title, section, { ...comp, names: names || comp.names }, thumb);
+      setPages((prev) => [newDbPage, ...prev]);
+    } catch (e: any) {
+      console.error('Failed to save solo page to database:', e);
+      const fallbackPage: AlbumPage = {
+        id: crypto.randomUUID(),
+        title,
+        section,
+        createdAt: Date.now(),
+        paper: comp.paper,
+        thumb,
+        composition: { ...comp, names: names || comp.names },
+      };
+      setPages((prev) => [fallbackPage, ...prev]);
+    }
     setView('album');
   };
 
-  // Save into a shared room album (Supabase)
+  // Save into a shared room album in Neon Postgres Database
   const handleRoomSave = async (title: string, section: string, comp: Composition) => {
     if (!roomCtx) return;
-    const thumb = await renderToDataURL(comp, 0.5);
+    const thumb = await renderToDataURL(comp, 0.4);
     const author = roomCtx.identity === 'p1' ? roomCtx.room.partner1_name : roomCtx.room.partner2_name || 'Partner 2';
     try {
       await addRoomPage(roomCtx.room.id, author, title, section, comp, thumb);
     } catch (e: any) {
-      // fall back to local save
       console.error('Room save failed:', e.message);
     }
     setView('room');
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSoloPage(id);
+    } catch {
+      // silent
+    }
     setPages((prev) => prev.filter((p) => p.id !== id));
   };
 
@@ -82,9 +102,12 @@ export default function App() {
       {view === 'home' && (
         <Home
           pages={pages}
-          onNew={() => setView('layout-picker')}
+          onNew={() => {
+            setRoomCtx(null); // Solo Photobooth mode
+            setView('layout-picker');
+          }}
           onOpenAlbum={() => setView('album')}
-          onOpenRoom={() => setView('room')}
+          onOpenRoom={() => setView('room')} // Private Room mode
           musicOn={musicOn}
           onToggleMusic={() => setMusicOn((m) => !m)}
           names={names}
@@ -94,6 +117,7 @@ export default function App() {
 
       {view === 'layout-picker' && (
         <LayoutPicker
+          isRoom={!!roomCtx}
           onPick={(l) => {
             setPickedLayout(l);
             setView(roomCtx ? 'room-editor' : 'editor');
@@ -124,7 +148,10 @@ export default function App() {
         <AlbumView
           pages={pages}
           onDelete={handleDelete}
-          onNew={() => setView('layout-picker')}
+          onNew={() => {
+            setRoomCtx(null);
+            setView('layout-picker');
+          }}
           onView={(p) => setViewer(p)}
         />
       )}

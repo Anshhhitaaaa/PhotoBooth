@@ -16,10 +16,10 @@ import {
   Zap,
   ArrowRight,
   Star,
+  Key,
   type LucideIcon,
 } from 'lucide-react';
 import type { AlbumPage } from '@/types';
-import { Button } from '@/components/ui/Button';
 import { renderToDataURL } from '@/lib/render';
 
 interface Props {
@@ -44,12 +44,24 @@ const COMMUNITY_PHOTOS = [
   'https://images.pexels.com/photos/8334771/pexels-photo-8334771.jpeg?auto=compress&cs=tinysrgb&h=400',
 ];
 
-const FLOATING_STICKERS = ['✨', '🌸', '💕', '🎀', '📸', '💫', '❤️', '🌷'];
+const FLOATING_STICKERS = [
+  { char: '🌸', left: '6%', top: '22%' },
+  { char: '💕', left: '88%', top: '18%' },
+  { char: '🎀', left: '92%', top: '8%' },
+  { char: '🦋', left: '3%', top: '42%' },
+  { char: '💌', left: '8%', top: '56%' },
+  { char: '✨', left: '84%', top: '48%' },
+  { char: '💖', left: '94%', top: '62%' },
+  { char: '🌙', left: '34%', top: '48%' },
+  { char: '⭐', left: '64%', top: '54%' },
+  { char: '🍓', left: '26%', top: '92%' },
+  { char: '🌸', left: '68%', top: '28%' },
+];
 
 const FAQS = [
   {
     q: 'Is this free to use?',
-    a: 'Yes! Love Booth is 100% free with no account, no signup, and no download. Open the site and start taking photos instantly.',
+    a: 'Yes! Love Booth is 100% free with no account, no signup, and no watermarks. Open the site and start taking photos instantly.',
   },
   {
     q: 'Do I need to download an app?',
@@ -61,15 +73,15 @@ const FAQS = [
   },
   {
     q: 'Are my photos private?',
-    a: 'Your solo photos never leave your device. Room photos are synced through a private database that only you and your partner can access with the room code.',
+    a: 'Your solo photos never leave your device. Room photos are synced through a private database that only you and your partner can access with your code.',
   },
   {
     q: 'Can I add stickers and filters?',
-    a: 'Absolutely. Choose from hearts, LDR-themed stickers (planes, clocks, moon), cute doodles, flowers, and more. Drag, resize, rotate, and layer them freely. Plus 6 vintage filters and adjustable brightness, contrast, and saturation.',
+    a: 'Absolutely. Choose from doodle hearts, cute expressions, flowers, coquette bows, and more. Drag, resize, and rotate freely.',
   },
   {
     q: 'What can I do with my finished photos?',
-    a: 'Download as a high-res PNG, print directly from your browser, or share via your phone\'s share sheet. Save them into your album scrapbook with captions and themes.',
+    a: 'Download as a high-res PNG, print directly from your browser, or share via your phone\'s share sheet.',
   },
 ];
 
@@ -91,155 +103,168 @@ export function Home({ pages, onNew, onOpenAlbum, onOpenRoom, musicOn, onToggleM
   }, [memory]);
 
   return (
-    <div className="bg-romance min-h-screen overflow-x-hidden">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-pink-100/50 bg-cream-100/70 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+    <div className="min-h-screen overflow-x-hidden bg-[#fdfbf7] text-[#5c4a52] selection:bg-pink-100 selection:text-pink-600">
+      {/* Top Header Nav (Matching Image 1) */}
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-[#fdfbf7]/80 backdrop-blur-md px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/favicon.svg" alt="Love Booth" className="h-8 w-8 drop-shadow-sm transition-transform hover:scale-110" />
-            <span className="font-display text-xl text-pink-600">Love Booth</span>
+            <Heart size={20} className="fill-[#ff4d79] text-[#ff4d79]" />
+            <span className="font-script text-2xl font-bold text-[#2b1820]">Us Booth</span>
           </div>
-          <div className="hidden items-center gap-1 sm:flex">
-            <NavLink label="How it works" target="how" />
-            <NavLink label="Features" target="features" />
-            <NavLink label="Community" target="community" />
-            <NavLink label="FAQ" target="faq" />
-          </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-4">
             <button
               onClick={onToggleMusic}
-              className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-pink-600 shadow-sm ring-1 ring-pink-100 transition-all hover:scale-105"
+              className="flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-[#ff4d79] shadow-sm ring-1 ring-pink-100 transition-all hover:scale-105"
             >
               {musicOn ? <Music2 size={13} className="animate-pulse" /> : <Music size={13} />}
               <span className="hidden sm:inline">{musicOn ? 'Music on' : 'Music off'}</span>
             </button>
-            <Button size="sm" onClick={onNew}>
-              <Camera size={14} /> <span className="hidden sm:inline">Start the Booth</span>
-              <span className="sm:hidden">Start</span>
-            </Button>
+            <button
+              onClick={onOpenRoom}
+              className="flex items-center gap-1.5 text-xs font-bold text-[#ff4d79] bg-[#ffeef4] px-4 py-2 rounded-full hover:bg-pink-100 transition-all"
+            >
+              <Users size={14} /> Pvt Room
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section ref={heroRef} className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20 text-center">
-        {/* floating stickers */}
+      {/* Hero Section (Matching Image 1 Exact Design & Typography) */}
+      <section ref={heroRef} className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-24 pb-16 text-center">
+        {/* Ambient Floating Stickers Scattered in Background */}
         {FLOATING_STICKERS.map((s, i) => (
           <span
             key={i}
-            className="pointer-events-none absolute text-3xl opacity-60 sm:text-4xl"
+            className="pointer-events-none absolute text-3xl opacity-70 sm:text-4xl select-none"
             style={{
-              left: `${8 + i * 11}%`,
-              top: `${15 + (i % 4) * 18}%`,
-              animation: `floatUp ${8 + i}s ease-in-out infinite alternate`,
-              animationDelay: `${i * 0.5}s`,
+              left: s.left,
+              top: s.top,
+              animation: `floatUp ${7 + (i % 5)}s ease-in-out infinite alternate`,
+              animationDelay: `${i * 0.4}s`,
             }}
           >
-            {s}
+            {s.char}
           </span>
         ))}
 
-        <div className="soft-in relative z-10 flex flex-col items-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-bold text-pink-500 shadow-sm ring-1 ring-pink-100">
-            <Sparkles size={12} /> 100% Free · No sign-up · Made for couples
+        <div className="soft-in relative z-10 flex flex-col items-center max-w-2xl mx-auto">
+          {/* Cute Pink Pill Badge */}
+          <div className="mb-6 inline-flex items-center gap-1.5 rounded-full bg-[#fce7f0] px-4 py-1.5 text-xs font-semibold text-[#e11d63]">
+            <Sparkles size={13} /> A photobooth for long-distance love
           </div>
 
-          <h1 className="font-display text-5xl leading-tight text-pink-600 sm:text-7xl">
-            Capture the moment,
-            <br />
-            cherish the love
+          {/* Main Title Heading (Serif + Script Italic) */}
+          <h1 className="font-serif text-5xl sm:text-7xl font-normal text-[#2b1820] tracking-tight leading-none">
+            A photobooth for two,
           </h1>
+          <h2 className="font-script text-5xl sm:text-7xl text-[#ff4d79] font-normal italic mt-1">
+            no matter the distance
+          </h2>
 
-          <p className="mt-5 max-w-lg text-base text-stone-500 sm:text-lg">
-            Step into the internet's cutest photobooth for couples. Snap photo strips with your
-            webcam, decorate with stickers and vintage filters, and build a shared scrapbook —
-            even when you're miles apart.
+          {/* Description Text */}
+          <p className="mt-6 text-base sm:text-lg text-[#5c4a52] font-normal leading-relaxed max-w-lg">
+            Step inside the internet's cutest photobooth — built for couples who are far apart but close at heart. Take photo strips together, in real time, and keep them in a shared album.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" onClick={onNew} className="text-base">
-              <Camera size={20} /> Start the Booth
-            </Button>
-            <Button size="lg" variant="soft" onClick={onOpenRoom} className="text-base">
-              <Users size={20} /> Room for Two
-            </Button>
+          {/* Action Buttons (Matching Image 1) */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <button
+              onClick={onNew}
+              className="flex items-center gap-2 rounded-full bg-[#ff4d79] hover:bg-[#e03d67] text-white font-bold text-base px-8 py-3.5 shadow-lg shadow-pink-200 transition-all hover:scale-105 active:scale-95"
+            >
+              <Camera size={18} /> Start Solo Booth <ArrowRight size={18} />
+            </button>
+            <button
+              onClick={onOpenRoom}
+              className="flex items-center gap-2 rounded-full border-2 border-[#ff4d79] hover:bg-pink-50 text-[#ff4d79] font-bold text-base px-8 py-3.5 transition-all hover:scale-105 active:scale-95 bg-white"
+            >
+              <Users size={18} /> Pvt Room
+            </button>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-stone-400">
-            <span className="flex items-center gap-1.5"><Lock size={12} /> Private</span>
-            <span className="flex items-center gap-1.5"><Zap size={12} /> Instant</span>
-            <span className="flex items-center gap-1.5"><Globe size={12} /> Works on any device</span>
-            <span className="flex items-center gap-1.5"><Star size={12} className="fill-gold-400 text-gold-400" /> No watermark</span>
-          </div>
-
-          {/* names input */}
-          <div className="mt-8">
-            <label className="mb-1.5 block text-xs font-semibold text-stone-400">
-              Your names (shows on photo strips)
+          {/* Names Input for Strip Header */}
+          <div className="mt-8 flex flex-col items-center">
+            <label className="mb-2 text-xs font-semibold text-[#8c7680]">
+              Your names (printed on your photo strips)
             </label>
             <input
               value={names}
               onChange={(e) => setNames(e.target.value)}
-              placeholder="Alex & Sam"
+              placeholder="e.g. Alex & Sam"
               maxLength={30}
-              className="w-64 rounded-full border-2 border-pink-100 bg-white/80 px-5 py-2.5 text-center text-sm text-stone-700 shadow-sm focus:border-pink-400 focus:outline-none"
+              className="w-64 rounded-full border-2 border-pink-200 bg-white px-5 py-2.5 text-center text-sm text-[#2b1820] shadow-sm focus:border-[#ff4d79] focus:outline-none"
             />
           </div>
         </div>
 
-        {/* scroll hint */}
+        {/* Scroll Arrow */}
         <button
           onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-pink-400 transition-all hover:text-pink-600"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[#ff4d79] transition-all hover:scale-110"
         >
           <ChevronDown className="animate-bounce" size={28} />
         </button>
       </section>
 
-      {/* How it works */}
-      <section id="how" className="mx-auto max-w-5xl px-4 py-20">
-        <SectionTitle
-          eyebrow="How it works"
-          title={<>Ready in <em className="font-display not-italic text-pink-500">under 2 minutes</em></>}
-          subtitle="From snap to download — it's that simple."
-        />
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <StepCard
-            num={1}
-            icon={Camera}
-            title="Strike a pose"
-            desc="Allow camera access. Grab your partner (or your phone), fix your hair, and get ready for the countdown flash."
-          />
-          <StepCard
-            num={2}
-            icon={Film}
-            title="Pick a vibe"
-            desc="Choose from classic strip, Polaroid, or grid layouts. Apply vintage film, B&W, warm glow, or dreamy soft-focus filters."
-          />
-          <StepCard
-            num={3}
-            icon={Sticker}
-            title="Decorate"
-            desc="Add cute stickers, hearts, LDR-themed doodles, washi tape, and handwritten captions. Drag, resize, and rotate freely."
-          />
-          <StepCard
-            num={4}
-            icon={Download}
-            title="Keep forever"
-            desc="Download your high-res PNG, print it, or share it. Save it to your album scrapbook and build your story over time."
-          />
+      {/* "How it works" Section (Matching Image 2 Exact Cards & Layout) */}
+      <section id="how" className="relative mx-auto max-w-5xl px-4 py-20 text-center">
+        <h2 className="font-script text-4xl sm:text-5xl text-[#ff4d79] font-normal">
+          How it works
+        </h2>
+        <p className="mt-2 text-sm sm:text-base text-[#5c4a52]">
+          Three little steps to a memory you'll keep forever.
+        </p>
+
+        {/* 3 Soft Floating White Cards (Matching Image 2) */}
+        <div className="mt-12 grid gap-6 sm:grid-cols-3">
+          {/* Step 1 */}
+          <div className="group relative flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-lg shadow-pink-100/50 ring-1 ring-pink-100/60 transition-all hover:-translate-y-1 hover:shadow-xl">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ffeef4] text-[#ff4d79]">
+              <Users size={28} />
+            </div>
+            <span className="font-script text-xl text-[#ff4d79] italic mb-1">Step 1</span>
+            <h3 className="text-lg font-bold text-[#2b1820]">Join together</h3>
+            <p className="mt-2 text-xs leading-relaxed text-[#7c6670]">
+              One of you creates a room, the other joins with a 6-letter code. You're connected in seconds.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="group relative flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-lg shadow-pink-100/50 ring-1 ring-pink-100/60 transition-all hover:-translate-y-1 hover:shadow-xl">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ffeef4] text-[#ff4d79]">
+              <Camera size={28} />
+            </div>
+            <span className="font-script text-xl text-[#ff4d79] italic mb-1">Step 2</span>
+            <h3 className="text-lg font-bold text-[#2b1820]">Strike a pose</h3>
+            <p className="mt-2 text-xs leading-relaxed text-[#7c6670]">
+              A synced countdown fires on both screens. Smile, laugh, be silly — the photos are captured at the same moment.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="group relative flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-lg shadow-pink-100/50 ring-1 ring-pink-100/60 transition-all hover:-translate-y-1 hover:shadow-xl">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ffeef4] text-[#ff4d79]">
+              <Sparkles size={28} />
+            </div>
+            <span className="font-script text-xl text-[#ff4d79] italic mb-1">Step 3</span>
+            <h3 className="text-lg font-bold text-[#2b1820]">Keep forever</h3>
+            <p className="mt-2 text-xs leading-relaxed text-[#7c6670]">
+              Decorate with stickers, filters, and captions. Save your strip to a shared album you both can revisit.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Features grid */}
-      <section id="features" className="bg-white/40 py-20">
-        <div className="mx-auto max-w-5xl px-4">
-          <SectionTitle
-            eyebrow="Features"
-            title={<>Everything you need to <em className="font-display not-italic text-pink-500">look iconic</em></>}
-            subtitle="Packed with features that make your photos unforgettable."
-          />
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Features Grid */}
+      <section id="features" className="py-20 bg-white/60 border-t border-b border-pink-100/60">
+        <div className="mx-auto max-w-5xl px-4 text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#ff4d79] mb-2">Features</p>
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#2b1820]">
+            Everything you need to <em className="font-script not-italic text-[#ff4d79]">look iconic</em>
+          </h2>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <FeatureCard icon={Globe} title="Works in your browser" desc="Compatible with all modern browsers. Snap photos on iPhone, Android, or laptop — zero installation required." />
             <FeatureCard icon={Sticker} title="Aesthetic stickers" desc="Hearts, LDR-themed planes, clocks, moon doodles, flowers, and more. Drag, resize, rotate, and layer them your way." />
             <FeatureCard icon={Film} title="Vintage film filters" desc="Apply high-quality film grain, light leaks, and nostalgia-soaked filters. B&W, warm film, 90s tones — all one click." />
@@ -250,13 +275,13 @@ export function Home({ pages, onNew, onOpenAlbum, onOpenRoom, musicOn, onToggleM
         </div>
       </section>
 
-      {/* Community scrapbook wall */}
-      <section id="community" className="mx-auto max-w-5xl px-4 py-20">
-        <SectionTitle
-          eyebrow="Community Scrapbook"
-          title={<>Real photos from <em className="font-display not-italic text-pink-500">real couples</em></>}
-          subtitle="Beautiful moments captured right here in the booth."
-        />
+      {/* Community Scrapbook Wall */}
+      <section id="community" className="mx-auto max-w-5xl px-4 py-20 text-center">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#ff4d79] mb-2">Community Scrapbook</p>
+        <h2 className="font-serif text-3xl sm:text-4xl text-[#2b1820]">
+          Real photos from <em className="font-script not-italic text-[#ff4d79]">real couples</em>
+        </h2>
+
         <div className="mt-12 columns-2 gap-4 sm:columns-3 lg:columns-4 [&>*]:mb-4">
           {COMMUNITY_PHOTOS.map((src, i) => (
             <div
@@ -273,56 +298,47 @@ export function Home({ pages, onNew, onOpenAlbum, onOpenRoom, musicOn, onToggleM
             </div>
           ))}
         </div>
-        <div className="mt-8 rounded-3xl bg-pink-100/50 p-6 text-center ring-1 ring-pink-200">
-          <p className="font-script text-xl text-pink-600">
-            Take a photo, share it, and your memory could be featured here too.
-          </p>
-          <div className="mt-4">
-            <Button onClick={onNew}>
-              <Camera size={16} /> Take your photo
-            </Button>
-          </div>
-        </div>
       </section>
 
       {/* Memory of the day */}
       {memory && memUrl && (
         <section className="mx-auto max-w-2xl px-4 pb-16">
-          <div className="rounded-3xl bg-white/70 p-8 text-center shadow-lg ring-1 ring-pink-100">
-            <p className="mb-4 text-xs font-bold uppercase tracking-widest text-pink-500">
+          <div className="rounded-3xl bg-white p-8 text-center shadow-lg ring-1 ring-pink-100">
+            <p className="mb-4 text-xs font-bold uppercase tracking-widest text-[#ff4d79]">
               Memory of the day
             </p>
             <img src={memUrl} alt={memory.title} className="mx-auto max-h-80 rounded-xl shadow-lg" />
-            <p className="mt-4 font-script text-2xl text-stone-600">{memory.title}</p>
+            <p className="mt-4 font-script text-2xl text-[#2b1820]">{memory.title}</p>
             {memory.section && (
-              <p className="text-sm font-semibold text-pink-400">{memory.section}</p>
+              <p className="text-sm font-semibold text-[#ff4d79]">{memory.section}</p>
             )}
           </div>
         </section>
       )}
 
       {/* FAQ */}
-      <section id="faq" className="bg-white/40 py-20">
-        <div className="mx-auto max-w-2xl px-4">
-          <SectionTitle
-            eyebrow="FAQ"
-            title={<>Questions? <em className="font-display not-italic text-pink-500">We've got you</em></>}
-          />
-          <div className="mt-10 space-y-3">
+      <section id="faq" className="bg-white/60 py-20 border-t border-pink-100/60">
+        <div className="mx-auto max-w-2xl px-4 text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#ff4d79] mb-2">FAQ</p>
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#2b1820]">
+            Questions? <em className="font-script not-italic text-[#ff4d79]">We've got you</em>
+          </h2>
+
+          <div className="mt-10 space-y-3 text-left">
             {FAQS.map((f, i) => (
-              <div key={i} className="overflow-hidden rounded-2xl bg-white/80 shadow-sm ring-1 ring-pink-100">
+              <div key={i} className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-pink-100">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="flex w-full items-center justify-between px-5 py-4 text-left"
+                  className="flex w-full items-center justify-between px-5 py-4 text-left font-bold text-[#2b1820]"
                 >
-                  <span className="text-sm font-bold text-stone-700">{f.q}</span>
+                  <span className="text-sm">{f.q}</span>
                   <ChevronDown
                     size={18}
-                    className={`shrink-0 text-pink-400 transition-transform ${openFaq === i ? 'rotate-180' : ''}`}
+                    className={`shrink-0 text-[#ff4d79] transition-transform ${openFaq === i ? 'rotate-180' : ''}`}
                   />
                 </button>
                 {openFaq === i && (
-                  <div className="soft-in px-5 pb-4 text-sm text-stone-500">{f.a}</div>
+                  <div className="soft-in px-5 pb-4 text-sm text-[#7c6670]">{f.a}</div>
                 )}
               </div>
             ))}
@@ -331,89 +347,43 @@ export function Home({ pages, onNew, onOpenAlbum, onOpenRoom, musicOn, onToggleM
       </section>
 
       {/* CTA */}
-      <section className="py-20">
-        <div className="mx-auto max-w-2xl px-4 text-center">
-          <h2 className="font-display text-4xl text-pink-600 sm:text-5xl">
+      <section className="py-20 text-center">
+        <div className="mx-auto max-w-2xl px-4">
+          <h2 className="font-serif text-4xl text-[#2b1820] sm:text-5xl">
             Your next moment is one click away
           </h2>
-          <p className="mt-3 text-stone-500">
-            Join thousands of couples who create and share their love story with Love Booth.
+          <p className="mt-3 text-[#7c6670]">
+            Join couples everywhere who create and share their love story with Us Booth.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button size="lg" onClick={onNew} className="text-base">
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <button
+              onClick={onNew}
+              className="flex items-center gap-2 rounded-full bg-[#ff4d79] hover:bg-[#e03d67] text-white font-bold text-base px-8 py-3.5 shadow-lg shadow-pink-200 transition-all hover:scale-105"
+            >
               <Camera size={20} /> Open the Booth
-            </Button>
-            <Button size="lg" variant="soft" onClick={onOpenAlbum} className="text-base">
+            </button>
+            <button
+              onClick={onOpenAlbum}
+              className="flex items-center gap-2 rounded-full border-2 border-[#ff4d79] hover:bg-pink-50 text-[#ff4d79] font-bold text-base px-8 py-3.5 transition-all hover:scale-105 bg-white"
+            >
               <BookOpen size={20} /> Your Album
-            </Button>
+            </button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-pink-100 py-10">
-        <div className="mx-auto max-w-6xl px-4 text-center">
+      <footer className="border-t border-pink-100 py-10 text-center">
+        <div className="mx-auto max-w-6xl px-4">
           <div className="mb-3 flex items-center justify-center gap-2">
-            <span className="text-xl">💕</span>
-            <span className="font-display text-lg text-pink-600">Love Booth</span>
+            <Heart size={18} className="fill-[#ff4d79] text-[#ff4d79]" />
+            <span className="font-script text-xl text-[#2b1820]">Us Booth</span>
           </div>
-          <p className="text-xs text-stone-400">
-            Made with <Heart size={11} className="inline fill-pink-400 text-pink-400" /> for couples everywhere · 100% free, no watermark
+          <p className="text-xs text-[#8c7680]">
+            Made with <Heart size={11} className="inline fill-[#ff4d79] text-[#ff4d79]" /> for couples everywhere · 100% free, no watermark
           </p>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function NavLink({ label, target }: { label: string; target: string }) {
-  return (
-    <button
-      onClick={() => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' })}
-      className="rounded-lg px-3 py-1.5 text-sm font-semibold text-stone-500 transition-colors hover:bg-pink-100 hover:text-pink-600"
-    >
-      {label}
-    </button>
-  );
-}
-
-function SectionTitle({
-  eyebrow,
-  title,
-  subtitle,
-}: {
-  eyebrow: string;
-  title: React.ReactNode;
-  subtitle?: string;
-}) {
-  return (
-    <div className="text-center">
-      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-pink-400">{eyebrow}</p>
-      <h2 className="font-display text-3xl text-stone-700 sm:text-4xl">{title}</h2>
-      {subtitle && <p className="mt-2 text-stone-400">{subtitle}</p>}
-    </div>
-  );
-}
-
-function StepCard({
-  num,
-  icon: Icon,
-  title,
-  desc,
-}: {
-  num: number;
-  icon: LucideIcon;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="group relative rounded-3xl bg-white/70 p-6 text-center shadow-sm ring-1 ring-pink-100 transition-all hover:shadow-lg hover:ring-pink-300">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-pink-100 text-pink-500 transition-transform group-hover:scale-110">
-        <Icon size={26} />
-      </div>
-      <div className="absolute right-4 top-4 font-display text-2xl text-pink-200">{num}</div>
-      <h3 className="mb-2 text-sm font-bold text-stone-700">{title}</h3>
-      <p className="text-xs text-stone-400">{desc}</p>
     </div>
   );
 }
@@ -428,12 +398,12 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <div className="rounded-3xl bg-white/70 p-6 shadow-sm ring-1 ring-pink-100 transition-all hover:shadow-lg hover:ring-pink-300">
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-pink-100 text-pink-500">
+    <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-pink-100 transition-all hover:shadow-lg hover:-translate-y-1">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#ffeef4] text-[#ff4d79]">
         <Icon size={22} />
       </div>
-      <h3 className="mb-1.5 text-sm font-bold text-stone-700">{title}</h3>
-      <p className="text-xs text-stone-400">{desc}</p>
+      <h3 className="mb-1.5 text-sm font-bold text-[#2b1820]">{title}</h3>
+      <p className="text-xs text-[#7c6670] leading-relaxed">{desc}</p>
     </div>
   );
 }

@@ -40,5 +40,17 @@ CREATE TABLE IF NOT EXISTS room_pages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 4. Create solo_pages table for solo photobooth captures
+CREATE TABLE IF NOT EXISTS solo_pages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL DEFAULT 'Untitled memory',
+  section TEXT NOT NULL DEFAULT '',
+  composition JSONB NOT NULL DEFAULT '{}'::jsonb,
+  thumb TEXT NOT NULL DEFAULT '',
+  paper TEXT NOT NULL DEFAULT 'cream',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_room_pages_room ON room_pages(room_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_room_snaps_session ON room_snaps(room_id, session_id);
+CREATE INDEX IF NOT EXISTS idx_solo_pages_date ON solo_pages(created_at DESC);
